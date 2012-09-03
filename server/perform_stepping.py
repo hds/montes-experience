@@ -81,7 +81,7 @@ def phi_values(invars):
         for i in range(1, len(tt)+1):
             vals = [ frac2rat(phi_val(invars, s, r, i)) for r in range(0, len(invars['types'])) ]
             phi_vals[s].append(vals)
-            print [ s, r, i, vals ]
+            #print [ s, r, i, vals ]
             #for r in range(0, len(invars['types'])):
 
     return phi_vals
@@ -370,67 +370,96 @@ def changed_index(l1, l2):
 #pe, pf, ph, qe, qf, qh, j, hidden = inv_break()
 #pe, pf, ph, qe, qf, qh, j, hidden = inv_break_j1()
 
-invars = inv_article_3()
-set_hidden(invars)
+def stepping_invariants(invars):
+    #invars = inv_article_3()
+    set_hidden(invars)
 
-print invars
+    phi_vals = phi_values(invars)
 
-phi_vals = phi_values(invars)
-print phi_vals
+    bases_vals = [ basis_values(invars, phi_vals, s, 0) for s in range(0, len(phi_vals)) ]
 
-bases_vals = [ basis_values(invars, phi_vals, s, 0) for s in range(0, len(phi_vals)) ]
-print bases_vals
+    bases_inds = [ basis_indices(tt) for tt in invars['types'] ]
 
-bases_inds = [ basis_indices(tt) for tt in invars['types'] ]
-print bases_inds
+    ind, vals = stepping_alg(bases_vals)
 
-ind, vals = stepping_alg(bases_vals)
-
-print ind
-print vals
-
-results = {
-    'phi_vals': phi_vals,
-    'bases_vals': bases_vals,
-    'bases_inds': bases_inds,
-    'values': vals,
-    'indices': ind,
-    'ind_delta': [0] + [ changed_index(ind[i-1], ind[i]) for i in range(1, len(ind)) ],
-    'count': len(phi_vals),
-    'n': len(ind),
-    'ns': [ len(i) for i in bases_inds ]
-}
-results.update(invars)
- 
-#print json.dumps(['0'])
-print json.dumps(results, cls=SteppingJSONEncoder)
+    results = {
+        'phi_vals': phi_vals,
+        'bases_vals': bases_vals,
+        'bases_inds': bases_inds,
+        'values': vals,
+        'indices': ind,
+        'ind_delta': [0] + [ changed_index(ind[i-1], ind[i]) for i in range(1, len(ind)) ],
+        'count': len(phi_vals),
+        'n': len(ind),
+        'ns': [ len(i) for i in bases_inds ]
+    }
+    results.update(invars)
+     
+    return json.dumps(results, cls=SteppingJSONEncoder)
 
 
-quit()
+# invars = inv_article_3()
+# set_hidden(invars)
+# 
+# print invars
+# 
+# phi_vals = phi_values(invars)
+# print phi_vals
+# 
+# bases_vals = [ basis_values(invars, phi_vals, s, 0) for s in range(0, len(phi_vals)) ]
+# print bases_vals
+# 
+# bases_inds = [ basis_indices(tt) for tt in invars['types'] ]
+# print bases_inds
+# 
+# ind, vals = stepping_alg(bases_vals)
+# 
+# print ind
+# print vals
+# 
+# results = {
+#     'phi_vals': phi_vals,
+#     'bases_vals': bases_vals,
+#     'bases_inds': bases_inds,
+#     'values': vals,
+#     'indices': ind,
+#     'ind_delta': [0] + [ changed_index(ind[i-1], ind[i]) for i in range(1, len(ind)) ],
+#     'count': len(phi_vals),
+#     'n': len(ind),
+#     'ns': [ len(i) for i in bases_inds ]
+# }
+# results.update(invars)
+#  
+# #print json.dumps(['0'])
+# print json.dumps(results, cls=SteppingJSONEncoder)
+# 
+# 
+# quit()
 
-#phip, phiq = phi_values(pe, pf, ph, qe, qf, qh, j, hidden)
-
-#print phip
-#print phiq
-
-bvp = basis_values(pe, pf, phip, 0)
-bvq = basis_values(qe, qf, phiq, 0)
-indp = basis_ind(pe, pf)
-indq =  basis_ind(qe, qf)
-
-#print ""
-#print bvp
-#print bvq
-
-ind, vals = stepping_alg(bvp, bvq)
-invp = [pe, pf, ph]
-invq = [qe, qf, qh]
-
-im = draw_bases(bvp, bvq, ind, vals, indp, indq, invp, invq, hidden, j)
-
-
-
-filename = '/Users/hds/Desktop/test.png'
-if len(sys.argv) > 1:
-    filename = sys.argv[1]
-im.save(filename, 'PNG')
+##  
+##  #phip, phiq = phi_values(pe, pf, ph, qe, qf, qh, j, hidden)
+##  
+##  #print phip
+##  #print phiq
+##  
+##  bvp = basis_values(pe, pf, phip, 0)
+##  bvq = basis_values(qe, qf, phiq, 0)
+##  indp = basis_ind(pe, pf)
+##  indq =  basis_ind(qe, qf)
+##  
+##  #print ""
+##  #print bvp
+##  #print bvq
+##  
+##  ind, vals = stepping_alg(bvp, bvq)
+##  invp = [pe, pf, ph]
+##  invq = [qe, qf, qh]
+##  
+##  im = draw_bases(bvp, bvq, ind, vals, indp, indq, invp, invq, hidden, j)
+##  
+##  
+##  
+##  filename = '/Users/hds/Desktop/test.png'
+##  if len(sys.argv) > 1:
+##      filename = sys.argv[1]
+##  im.save(filename, 'PNG')
