@@ -27,6 +27,7 @@ def application(environ, start_response):
         
         inv_correct = False
         if 'inv' in request.args:
+            print '<<<' + request.args['inv'] + '>>>'
             invars = json.loads(request.args['inv'])
             if 'hidden' in invars and 'types' in invars and 'j' in invars:
                 inv_correct = True

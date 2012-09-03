@@ -113,6 +113,8 @@ def basis_indices(tt):
                 nind.append([s] + dni)
         ind = nind
 
+    print tt
+    print [ [0]+i for i in ind ] + [ [1] + [0 for i in range(1, len(tt))] ]
     return [ [0]+i for i in ind ] + [ [1] + [0 for i in range(1, len(tt))] ]
 
 def stepping_alg(bases_vals):
@@ -397,6 +399,8 @@ def stepping_invariants(invars):
      
     return json.dumps(results, cls=SteppingJSONEncoder)
 
+if __name__=="__main__":
+    print stepping_invariants(inv_article_3()) 
 
 # invars = inv_article_3()
 # set_hidden(invars)

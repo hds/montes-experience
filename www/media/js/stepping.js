@@ -14,7 +14,8 @@ function html_bases_vals(r, s, m)  {
 	console.log(ind, vals);
 	html = '(';
 	sep = '';
-	for (var i = 0; i < ind.length; i++)  {
+	
+	for (var i = 0; i < vals.length; i++)  {
 		html = html + sep + vals[i];
 		sep = ', ';
 	}
@@ -29,17 +30,23 @@ function draw_stepping(invars)  {
 	var hstep, vstep;
 	var	r;
 	
+	paper.clear();
+	var overlay = $('#display-outer');
+	overlay.children('.label').remove();
+	
 	r = invars;
+	
+	console.log(r.bases_inds);
 
-	console.log(r);
-	console.log(hsz, vsz, r.count);
+	//console.log(r);
+	//console.log(hsz, vsz, r.count);
 	
 	var node, line;
 	
 	hstep = Math.floor(hsz / (r.count+1));
 	vstep = Math.floor(vsz / (Math.max.apply(null, r.ns)+1));
 	
-	console.log(hstep, vstep);
+	//console.log(hstep, vstep);
 	
 	// Dots
 	for (var s = 0; s < r.count; s++)  {
@@ -61,7 +68,7 @@ function draw_stepping(invars)  {
 			values.append(html_bases_vals(r, s, m));
 			label = $('<div class="label"></div>');
 			label.append(values);
-			$('#display-outer').append(label);
+			overlay.append(label);
 			label.css('left', (s+1)*hstep).css('top', (m+1)*vstep);
 		}
 	}
@@ -84,18 +91,74 @@ function draw_stepping(invars)  {
 
 	}
 	
-	//var text = paper.text(60, 30, "The potaroo\nsaid that!");
-	//console.log(text.width);
-	
-
+	MathJax.Hub.Queue(["Typeset",MathJax.Hub]);	
 }
 
+function change_r()  {
+	var i = $(this).attr('id').match(/id__subgroup_invariants_(\d+)/)[1];
+	console.log("new r value for index: " + i);
+	
+	var group = ('#id__subgroup_invariants_'+i);
+}
+
+function create_invar_groups()  {
+	var		s;
+	
+	s = $('#id__num_prime_ideals').val();
+	
+	var inv_root = $('#id__group_invariants');
+	
+	inv_root.empty();
+	
+	inv_root.append('<textarea id="id__textarea" cols="40" rows="20"></textarea>');
+	
+	var textarea = inv_root.children('textarea');
+	
+	var inv = { 'types': [ [ {'e': 3, 'f': 2, 'h': 2}, {'e': 1, 'f': 1, 'h': 6}, ], ] };
+	textarea.append(JSON.stringify(inv));
+	
+	
+/*	for (var i = 1; i <= s; i++)  {
+		inv_root.append('<div id="id__subgroup_invariants_'+i+'" class="subgroup_invariants"><p><label for="id__r_'+i+'">$r_{'+i+'}$</label>: <input type="text" id="id__r_'+i+'" value="2" size="2" /></p></div>');
+		
+		var group = $('#id__subgroup_invariants_'+i);
+		//group_p = group.append('<p class="invars"></p>').children('p.invars');
+		for (var j = 1; j <= 2; j++)  {
+			var group_p = group.append('<p></p>').children('p').last();
+			group_p.append(
+				'<label class="invar" for="id__e_'+i+'_'+j+'">$e_{'+i+','+j+'}$</label>: <input id="id__e_'+i+'_'+j+'" type="text" size="1" />',
+				'<label class="invar" for="id__f_'+i+'_'+j+'">$f_{'+i+','+j+'}$</label>: <input id="id__f_'+i+'_'+j+'" type="text" size="1" />',
+				'<label class="invar" for="id__h_'+i+'_'+j+'">$h_{'+i+','+j+'}$</label>: <input id="id__h_'+i+'_'+j+'" type="text" size="1" />');
+		}	
+	}
+	
+	$('.subgroup_invariants').bind('change', change_r);*/
+	
+	
+	MathJax.Hub.Queue(["Typeset",MathJax.Hub]);
+}
+
+function fetch_stepping_invars_textarea()  {
+	fetch_stepping_invars($('#id__textarea').val());
+}
+
+function fetch_stepping_invars(inv)  {
+	//inv = inv.replace(/\s+/g, '');
+	$.ajax({
+		url: '/stepping/?inv='+inv,
+		success: function(data)  {
+			console.log(data);
+			draw_stepping(data);
+		},
+	});
+	
+}
 
 $(function() {
 	//var	hsz, vsz, hstep, vstep;
 	
-	hsz = 800;
-	vsz = 400;
+	hsz = 700;
+	vsz = 600;
 	paper = Raphael("display", hsz, vsz);
 	
 	//$('.display').appendChild(paper);
@@ -104,13 +167,12 @@ $(function() {
 	var r;
 	
 	var inv = '{"hidden": [[0, 0, 0], [0, 0, 0], [0, 0, 0]], "j": [[1, 1], [1]], "types": [[{"h": 2, "e": 3, "f": 2}, {"h": 6, "e": 1, "f": 1}], [{"h": 2, "e": 3, "f": 1}, {"h": 9, "e": 2, "f": 1}, {"h": 12, "e": 1, "f": 1}], [{"h": 1, "e": 2, "f": 1}, {"h": 9, "e": 3, "f": 1}, {"h": 12, "e": 1, "f": 1}]]}';
-	$.ajax({
-		url: '/stepping/?inv='+inv,
-		success: function(data)  {
-			console.log(data);
-			draw_stepping(data);
-		},
-	})
+	fetch_stepping_invars(inv)
+	
+	$('#id__invariant_form').bind('submit', function()  { fetch_stepping_invars_textarea(); return false; });
+	
+	//$('#id__num_prime_ideals').bind('change', create_invar_groups);
+	
 	
 	// 2 prime ideals
 	//r = {"count": 2, "bases_vals": [[["0", "0"], ["2/3", "1/3"], ["4/3", "2/3"], ["2", "1"], ["8/3", "4/3"], ["10/3", "5/3"], ["49", "2"]], [["0", "0"], ["2/3", "1/3"], ["4/3", "2/3"], ["1", "5/2"], ["5/3", "17/6"], ["7/3", "19/6"], ["2", "49"]]], "j": [[1]], "n": 12, "ind_delta": [0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1], "phi_vals": [[["2/3", "1/3"], ["49", "2"]], [["2/3", "1/3"], ["1", "5/2"], ["2", "49"]]], "bases_inds": [[[0, 0], [0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [1, 0]], [[0, 0, 0], [0, 0, 1], [0, 0, 2], [0, 1, 0], [0, 1, 1], [0, 1, 2], [1, 0, 0]]], "values": [["0", "0"], ["2/3", "1/3"], ["4/3", "2/3"], ["2", "1"], ["5/3", "17/6"], ["7/3", "19/6"], ["3", "7/2"], ["11/3", "23/6"], ["13/3", "25/6"], ["5", "9/2"], ["17/3", "29/6"], ["16/3", "152/3"]], "indices": [[0, 0], [1, 0], [1, 1], [1, 2], [1, 3], [2, 3], [3, 3], [4, 3], [5, 3], [5, 4], [5, 5], [5, 6]], "ns": [7, 7], "hidden": [[0, "2/3"], ["1/3", 0]], "types": [[{"h": 2, "e": 3, "f": 2}, {"h": 6, "e": 1, "f": 1}], [{"h": 1, "e": 3, "f": 1}, {"h": 9, "e": 2, "f": 1}, {"h": 12, "e": 1, "f": 1}]]};

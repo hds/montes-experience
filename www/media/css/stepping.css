@@ -1,7 +1,25 @@
 #display-outer  {
 	position: relative;
+	width: 800px;
+}
+
+#overlay  {
+	position: absolute;
+	left: 0;
+	top: 0;
 }
 
 .label  {
 	position: absolute;
+}
+
+#invariant-input  {
+	padding: 20px;
+	float: right;
+	
+	z-index: 4;
+}
+
+.entry-panel textarea  {
+	font-family: monospace;
 }
