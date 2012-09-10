@@ -11,7 +11,7 @@ function html_bases_vals(r, s, m)  {
 	if (ind[0] == 1)
 		vals[s] = '$\\infty$';
 	
-	console.log(ind, vals);
+	//console.log(ind, vals);
 	html = '(';
 	sep = '';
 	
@@ -24,10 +24,42 @@ function html_bases_vals(r, s, m)  {
 	return html;
 }
 
+function html_basis_val(r, i)  {
+	vals = r.values[i];
+	
+	html = '(';
+	sep = '';
+	
+	
+	
+	for (var j = 0; j < vals.length; j++)  {
+		html = html + sep + vals[j];
+		sep = ', ';
+	}
+	html = html + ')';
+	
+	//console.log(r.values[i], html);
+	
+	return html;
+}
+
+function label_div(s, m)  {
+	var labelId = 'label__'+s+'_'+m;
+	var label = $('#'+labelId);
+	if (label.length == 0)  {
+		label = $('<div id="'+labelId+'" class="label"></div>');
+		label.css('left', (s+1)*hstep).css('top', (m+1)*vstep);
+		
+		$('#display-outer').append(label);
+	}
+	
+	return label;
+}
+
 var hsz, vsz, paper;
+var hstep, vstep;
 
 function draw_stepping(invars)  {
-	var hstep, vstep;
 	var	r;
 	
 	paper.clear();
@@ -63,13 +95,13 @@ function draw_stepping(invars)  {
 				}
 			);
 			
-			values = $('<span class="values"></span>');
-			html_bases_vals(r, s, m);
+			values = $('<span class="values bases-values"></span>');
+			//html_bases_vals(r, s, m);
 			values.append(html_bases_vals(r, s, m));
-			label = $('<div class="label"></div>');
-			label.append(values);
-			overlay.append(label);
-			label.css('left', (s+1)*hstep).css('top', (m+1)*vstep);
+			label = label_div(s, m);
+			label.append(values);			
+			//label = $('<div id="label__'+r+'_'+s+'" class="label"></div>');
+			//label.css('left', (s+1)*hstep).css('top', (m+1)*vstep);
 		}
 	}
 	
@@ -78,7 +110,17 @@ function draw_stepping(invars)  {
 		line = paper.path(dotpath(s-1, 0, s, 0, hstep, vstep));
 		//line = paper.path("M"+(s)*hstep+","+vstep+"L"+(s+1)*hstep+","+vstep);
 		line.attr({"stroke": "#6f6", "stroke-width": 1.5});
+		
+		values = $('<span class="values basis-values"></span>');
+		values.append(html_basis_val(r, 0));
+		label = label_div(s, 0);
+		label.append('<br />', values);
 	}
+	values = $('<span class="values basis-values"></span>');
+	values.append(html_basis_val(r, 0));
+	label = label_div(0, 0);
+	label.append('<br />', values);
+	
 	var olds = r.ind_delta[0];
 	for (var i = 1; i < r.ind_delta.length; i++)  {
 		var s = r.ind_delta[i];
@@ -86,9 +128,10 @@ function draw_stepping(invars)  {
 		line.attr({"stroke": "#6f6", "stroke-width": 1.5});
 		olds = s;
 		
-		var label, values;
-		
-
+		values = $('<span class="values basis-values"></span>');
+		values.append(html_basis_val(r, i));
+		label = label_div(s, r.indices[i][s]);
+		label.append('<br />', values);
 	}
 	
 	MathJax.Hub.Queue(["Typeset",MathJax.Hub]);	
@@ -138,10 +181,6 @@ function create_invar_groups()  {
 	MathJax.Hub.Queue(["Typeset",MathJax.Hub]);
 }
 
-function fetch_stepping_invars_textarea()  {
-	fetch_stepping_invars($('#id__textarea').val());
-}
-
 function fetch_stepping_invars(inv)  {
 	//inv = inv.replace(/\s+/g, '');
 	$.ajax({
@@ -154,22 +193,27 @@ function fetch_stepping_invars(inv)  {
 	
 }
 
+function fetch_stepping_invars_textarea()  {
+	fetch_stepping_invars($('#id__textarea').val());
+}
+
 $(function() {
 	//var	hsz, vsz, hstep, vstep;
 	
-	hsz = 700;
-	vsz = 600;
+	hsz = $('#display').width();
+	vsz = $('#display').height();
 	paper = Raphael("display", hsz, vsz);
 	
 	//$('.display').appendChild(paper);
 	
 	
 	var r;
+
+	$('#id__invariant_form').bind('submit', function()  { fetch_stepping_invars_textarea(); return false; });
 	
 	var inv = '{"hidden": [[0, 0, 0], [0, 0, 0], [0, 0, 0]], "j": [[1, 1], [1]], "types": [[{"h": 2, "e": 3, "f": 2}, {"h": 6, "e": 1, "f": 1}], [{"h": 2, "e": 3, "f": 1}, {"h": 9, "e": 2, "f": 1}, {"h": 12, "e": 1, "f": 1}], [{"h": 1, "e": 2, "f": 1}, {"h": 9, "e": 3, "f": 1}, {"h": 12, "e": 1, "f": 1}]]}';
 	fetch_stepping_invars(inv)
 	
-	$('#id__invariant_form').bind('submit', function()  { fetch_stepping_invars_textarea(); return false; });
 	
 	//$('#id__num_prime_ideals').bind('change', create_invar_groups);
 	

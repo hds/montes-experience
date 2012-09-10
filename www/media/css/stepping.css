@@ -1,6 +1,12 @@
 #display-outer  {
 	position: relative;
-	width: 800px;
+	width: 700px;
+	z-index: 1;
+}
+
+#display  {
+	width: 700px;
+	height: 700px;
 }
 
 #overlay  {
@@ -22,4 +28,8 @@
 
 .entry-panel textarea  {
 	font-family: monospace;
+}
+
+.basis-values  {
+	color: #22c;
 }
