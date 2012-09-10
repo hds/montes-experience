@@ -30,8 +30,6 @@ function html_basis_val(r, i)  {
 	html = '(';
 	sep = '';
 	
-	
-	
 	for (var j = 0; j < vals.length; j++)  {
 		html = html + sep + vals[j];
 		sep = ', ';
@@ -54,6 +52,36 @@ function label_div(s, m)  {
 	}
 	
 	return label;
+}
+
+function ideal_label_div(s)  {
+	var labelId = 'label__ideal_'+s;
+	var label = $('#'+labelId);
+	if (label.length == 0)  {
+		label = $('<div id="'+labelId+'" class="label"></div>');
+		label.css('left', (s+0.5)*hstep).css('top', (0)*vstep).css('width', hstep).css('text-align', 'center');
+		
+		$('#display-outer').append(label);
+	}
+	
+	return label;
+}
+
+function type_invariant_html(r, s, key)  {
+	vals = r.types[s];
+	
+	html = '[';
+	sep = '';
+
+	for (var j = 0; j < vals.length; j++)  {
+		html = html + sep + vals[j][key];
+		
+		sep = ', ';
+	}
+	
+	html = html + ']';
+	
+	return html;
 }
 
 var hsz, vsz, paper;
@@ -99,10 +127,19 @@ function draw_stepping(invars)  {
 			//html_bases_vals(r, s, m);
 			values.append(html_bases_vals(r, s, m));
 			label = label_div(s, m);
-			label.append(values);			
+			label.append(values);		
 			//label = $('<div id="label__'+r+'_'+s+'" class="label"></div>');
 			//label.css('left', (s+1)*hstep).css('top', (m+1)*vstep);
 		}
+	}
+	
+	for (s = 0; s < r.count; s++)  {
+		label = ideal_label_div(s);
+		var ideal = $('<span class="ideal">$\\mathfrak{p}_{'+(s+1)+'}$</span>');
+		label.append(ideal);
+		label.append('<br />', 'e = ' + type_invariant_html(r, s, 'e'));
+		label.append('<br />', 'f = ' + type_invariant_html(r, s, 'f'));
+		label.append('<br />', 'h = ' + type_invariant_html(r, s, 'h'));
 	}
 	
 	// Lines
