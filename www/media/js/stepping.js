@@ -11,7 +11,6 @@ function html_bases_vals(r, s, m)  {
 	if (ind[0] == 1)
 		vals[s] = '$\\infty$';
 	
-	//console.log(ind, vals);
 	html = '(';
 	sep = '';
 	
@@ -26,17 +25,21 @@ function html_bases_vals(r, s, m)  {
 
 function html_basis_val(r, i)  {
 	vals = r.values[i];
+	var j;
+	
+	for (j = 0; j < vals.length; j++)  {
+		if (r.indices[i][j] == r.ns[j] - 1)
+			vals[j] = '$\\infty$';
+	}
 	
 	html = '(';
 	sep = '';
 	
-	for (var j = 0; j < vals.length; j++)  {
+	for (j = 0; j < vals.length; j++)  {
 		html = html + sep + vals[j];
 		sep = ', ';
 	}
 	html = html + ')';
-	
-	//console.log(r.values[i], html);
 	
 	return html;
 }
@@ -59,9 +62,15 @@ function ideal_label_div(s)  {
 	var label = $('#'+labelId);
 	if (label.length == 0)  {
 		label = $('<div id="'+labelId+'" class="label"></div>');
-		label.css('left', (s+0.5)*hstep).css('top', (0)*vstep).css('width', hstep).css('text-align', 'center');
+		label.css({
+			'left': (s+0.5)*hstep,
+			'top': (0.5)*vstep,
+			'width': hstep,
+			'text-align': 'center'
+		});
+		//label.css('left', (s+0.5)*hstep).css('top', (0)*vstep).css('width', hstep).css('text-align', 'center');
 		
-		$('#display-outer').append(label);
+		$('#display-upper').append(label);
 	}
 	
 	return label;
@@ -93,14 +102,10 @@ function draw_stepping(invars)  {
 	paper.clear();
 	var overlay = $('#display-outer');
 	overlay.children('.label').remove();
+	$('#display-upper').children().remove();
 	
 	r = invars;
-	
-	console.log(r.bases_inds);
-
-	//console.log(r);
-	//console.log(hsz, vsz, r.count);
-	
+		
 	var node, line;
 	
 	hstep = Math.floor(hsz / (r.count+1));
@@ -135,9 +140,9 @@ function draw_stepping(invars)  {
 	
 	for (s = 0; s < r.count; s++)  {
 		label = ideal_label_div(s);
-		var ideal = $('<span class="ideal">$\\mathfrak{p}_{'+(s+1)+'}$</span>');
+		var ideal = $('<div class="ideal">$\\mathfrak{p}_{'+(s+1)+'}$</div>');
 		label.append(ideal);
-		label.append('<br />', 'e = ' + type_invariant_html(r, s, 'e'));
+		label.append('e = ' + type_invariant_html(r, s, 'e'));
 		label.append('<br />', 'f = ' + type_invariant_html(r, s, 'f'));
 		label.append('<br />', 'h = ' + type_invariant_html(r, s, 'h'));
 	}
@@ -176,8 +181,7 @@ function draw_stepping(invars)  {
 
 function change_r()  {
 	var i = $(this).attr('id').match(/id__subgroup_invariants_(\d+)/)[1];
-	console.log("new r value for index: " + i);
-	
+		
 	var group = ('#id__subgroup_invariants_'+i);
 }
 
@@ -223,7 +227,7 @@ function fetch_stepping_invars(inv)  {
 	$.ajax({
 		url: '/stepping/?inv='+inv,
 		success: function(data)  {
-			console.log(data);
+			//console.log(data);
 			draw_stepping(data);
 		},
 	});
@@ -232,6 +236,49 @@ function fetch_stepping_invars(inv)  {
 
 function fetch_stepping_invars_textarea()  {
 	fetch_stepping_invars($('#id__textarea').val());
+}
+
+function ind_coin(inv, i, j)  {
+	if (i > j)  {
+		var t = j;
+		j = i;
+		i = t;
+	}
+	
+	return inv.j[i][j-i-1];	
+}
+
+function drawTree(inv)  {
+	
+	var types = [ ];
+	var max_r = 0;
+	
+	console.log(inv);
+	for (var ti = 0; ti < inv.types.length; ti++)  {
+		if (inv.types[ti].length > max_r)  {
+			max_r = inv.types[ti].length;
+		}
+	
+	}
+	
+	for (var i = 0; i < inv.types.length; i++)  {
+		for (var j = i+1; j < inv.types.length; j++)  {
+			console.log("index of coincidence", i, j, "=", ind_coin(inv, i, j));
+		}
+	}
+	
+//	node = paper.circle((s+1)*hstep, (m+1)*vstep, 4);
+//	node.attr("fill", "#000000");
+//	node.hover(function() {
+//			this.attr({"fill": "#fff", "stroke-width": 2});
+//			this.transform("s1.5");
+//		},
+//		function ()  {
+//			this.attr({"fill": "#000", "stroke": "#000"});
+//			this.transform("s1");
+//		}
+//	);
+	
 }
 
 $(function() {
@@ -248,15 +295,13 @@ $(function() {
 
 	$('#id__invariant_form').bind('submit', function()  { fetch_stepping_invars_textarea(); return false; });
 	
-	var inv = '{"hidden": [[0, 0, 0], [0, 0, 0], [0, 0, 0]], "j": [[1, 1], [1]], "types": [[{"h": 2, "e": 3, "f": 2}, {"h": 6, "e": 1, "f": 1}], [{"h": 2, "e": 3, "f": 1}, {"h": 9, "e": 2, "f": 1}, {"h": 12, "e": 1, "f": 1}], [{"h": 1, "e": 2, "f": 1}, {"h": 9, "e": 3, "f": 1}, {"h": 12, "e": 1, "f": 1}]]}';
-	fetch_stepping_invars(inv)
+	var inv = '{"hidden": [[0, 0, 0], [0, 0, 0], [0, 0, 0]], "j": [[2, 1], [1]], "types": [[{"h": 2, "e": 3, "f": 2}, {"h": 6, "e": 1, "f": 1}], [{"h": 2, "e": 3, "f": 1}, {"h": 9, "e": 2, "f": 1}, {"h": 12, "e": 1, "f": 1}], [{"h": 1, "e": 2, "f": 1}, {"h": 9, "e": 3, "f": 1}, {"h": 12, "e": 1, "f": 1}]]}';
+	//fetch_stepping_invars(inv)
+	fetch_stepping_invars_textarea();
+	
+	//drawTree(JSON.parse(inv));
 	
 	
-	//$('#id__num_prime_ideals').bind('change', create_invar_groups);
-	
-	
-	// 2 prime ideals
-	//r = {"count": 2, "bases_vals": [[["0", "0"], ["2/3", "1/3"], ["4/3", "2/3"], ["2", "1"], ["8/3", "4/3"], ["10/3", "5/3"], ["49", "2"]], [["0", "0"], ["2/3", "1/3"], ["4/3", "2/3"], ["1", "5/2"], ["5/3", "17/6"], ["7/3", "19/6"], ["2", "49"]]], "j": [[1]], "n": 12, "ind_delta": [0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1], "phi_vals": [[["2/3", "1/3"], ["49", "2"]], [["2/3", "1/3"], ["1", "5/2"], ["2", "49"]]], "bases_inds": [[[0, 0], [0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [1, 0]], [[0, 0, 0], [0, 0, 1], [0, 0, 2], [0, 1, 0], [0, 1, 1], [0, 1, 2], [1, 0, 0]]], "values": [["0", "0"], ["2/3", "1/3"], ["4/3", "2/3"], ["2", "1"], ["5/3", "17/6"], ["7/3", "19/6"], ["3", "7/2"], ["11/3", "23/6"], ["13/3", "25/6"], ["5", "9/2"], ["17/3", "29/6"], ["16/3", "152/3"]], "indices": [[0, 0], [1, 0], [1, 1], [1, 2], [1, 3], [2, 3], [3, 3], [4, 3], [5, 3], [5, 4], [5, 5], [5, 6]], "ns": [7, 7], "hidden": [[0, "2/3"], ["1/3", 0]], "types": [[{"h": 2, "e": 3, "f": 2}, {"h": 6, "e": 1, "f": 1}], [{"h": 1, "e": 3, "f": 1}, {"h": 9, "e": 2, "f": 1}, {"h": 12, "e": 1, "f": 1}]]};
 	
 	// 3 prime ideals
 	r = {
@@ -274,61 +319,5 @@ $(function() {
 		"types": [[{"h": 2, "e": 3, "f": 2}, {"h": 6, "e": 1, "f": 1}], [{"h": 2, "e": 3, "f": 1}, {"h": 9, "e": 2, "f": 1}, {"h": 12, "e": 1, "f": 1}], [{"h": 1, "e": 2, "f": 1}, {"h": 9, "e": 3, "f": 1}, {"h": 12, "e": 1, "f": 1}]]
 	};
 	
-/*	console.log(r);
-	
-	var node, line;
-	
-	hstep = Math.floor(hsz / (r.count+1));
-	vstep = Math.floor(vsz / (Math.max.apply(null, r.ns)+1));
-	
-	console.log(hstep, vstep);
-	
-	// Dots
-	for (var s = 0; s < r.count; s++)  {
-		for (var m = 0; m < r.ns[s]; m++)  {
-			node = paper.circle((s+1)*hstep, (m+1)*vstep, 4);
-			node.attr("fill", "#000000");
-			node.hover(function() {
-					this.attr({"fill": "#fff", "stroke-width": 2});
-					this.transform("s1.5");
-				},
-				function ()  {
-					this.attr({"fill": "#000", "stroke": "#000"});
-					this.transform("s1");
-				}
-			);
-			
-			values = $('<span class="values"></span>');
-			html_bases_vals(r, s, m);
-			values.append(html_bases_vals(r, s, m));
-			label = $('<div class="label"></div>');
-			label.append(values);
-			$('#display-outer').append(label);
-			label.css('left', (s+1)*hstep).css('top', (m+1)*vstep);
-		}
-	}
-	
-	// Lines
-	for (s = 1; s < r.count; s++)  {
-		line = paper.path(dotpath(s-1, 0, s, 0, hstep, vstep));
-		//line = paper.path("M"+(s)*hstep+","+vstep+"L"+(s+1)*hstep+","+vstep);
-		line.attr({"stroke": "#6f6", "stroke-width": 1.5});
-	}
-	var olds = r.ind_delta[0];
-	for (var i = 1; i < r.ind_delta.length; i++)  {
-		var s = r.ind_delta[i];
-		line = paper.path(dotpath(olds, r.indices[i-1][olds], s, r.indices[i][s], hstep, vstep));
-		line.attr({"stroke": "#6f6", "stroke-width": 1.5});
-		olds = s;
-		
-		var label, values;
-		
 
-	}
-	
-	//var text = paper.text(60, 30, "The potaroo\nsaid that!");
-	//console.log(text.width);
-	
-	
-*/	
 });

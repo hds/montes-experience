@@ -9,6 +9,11 @@
 	height: 700px;
 }
 
+#display-upper  {
+	width: 700px;
+	height: 70px;
+}
+
 #overlay  {
 	position: absolute;
 	left: 0;
@@ -17,6 +22,8 @@
 
 .label  {
 	position: absolute;
+	font-size: 11pt;
+	line-height: 14pt;
 }
 
 #invariant-input  {
@@ -35,5 +42,6 @@
 }
 
 .ideal  {
-	font-size: 14pt;
+	font-size: 15pt;
+	padding-bottom: 6px;
 }
