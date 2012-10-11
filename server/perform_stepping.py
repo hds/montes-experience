@@ -379,6 +379,12 @@ def stepping_invariants(invars):
     phi_vals = phi_values(invars)
 
     bases_vals = [ basis_values(invars, phi_vals, s, 0) for s in range(0, len(phi_vals)) ]
+    bases_vals_diff = [ ]
+    for s in range(0, len(phi_vals)):
+        vals = [ bases_vals[s][0] ]
+        vals.extend([ [ Rat(bases_vals[s][m][i] - bases_vals[s][m-1][i]) for i in range(0, len(bases_vals[s][m])) ] for m in range(1, len(bases_vals[s])) ])
+        bases_vals_diff.append(vals)
+        print 'vals:', vals
 
     bases_inds = [ basis_indices(tt) for tt in invars['types'] ]
 
@@ -387,6 +393,7 @@ def stepping_invariants(invars):
     results = {
         'phi_vals': phi_vals,
         'bases_vals': bases_vals,
+        'bases_vals_diff': bases_vals_diff,
         'bases_inds': bases_inds,
         'values': vals,
         'indices': ind,

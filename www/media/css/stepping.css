@@ -7,6 +7,7 @@
 #display  {
 	width: 700px;
 	height: 700px;
+/*	border: 1px solid #333;*/
 }
 
 #display-upper  {
@@ -35,6 +36,10 @@
 
 .entry-panel textarea  {
 	font-family: monospace;
+}
+
+.template  {
+	display: none;
 }
 
 .basis-values  {

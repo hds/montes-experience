@@ -23,6 +23,61 @@ function html_bases_vals(r, s, m)  {
 	return html;
 }
 
+
+function html_bases_vals_diff(r, s, m)  {
+	var	vals, ind, html, sep;
+
+	vals = r.bases_vals_diff[s][m];
+	ind = r.bases_inds[s][m];
+	
+	if (ind[0] == 1)
+		vals[s] = '$\\infty$';
+	
+	html = '(';
+	sep = '';
+	
+	for (var i = 0; i < vals.length; i++)  {
+		if (vals[i].substr(0, 1) != '-')
+			vals[i] = '+' + vals[i];
+		html = html + sep + vals[i];
+		sep = ', ';
+	}
+	html = html + ')';
+	
+	return html;
+}
+
+function phi_polynomial_html(r, s, m)  {
+	var	ind, html, sep;
+
+	ind = r.bases_inds[s][m];
+	
+//	if (ind[0] == 1)
+//		vals[s] = '$\\infty$';
+	
+	html = '$g_{'+(m)+','+prime_ideals[s]+'} = ';
+	sep = '';
+	
+	for (var i = 0; i < ind.length; i++)  {
+		if (ind[i] > 0)  {
+			var exp = '', phii = ind.length-i;
+			if (ind[i] > 1)
+				exp = '^{'+ind[i]+'}'
+			if (i == 0)
+				phii = prime_ideals[s];
+			html = html + sep + '\\phi_{'+phii+'}'+exp;
+
+			//sep = '\\cdot';
+		}
+	}
+	if (m == 0)
+		html = html + '1';
+	html = html + '$';
+	
+	return html;
+}
+
+
 function html_basis_val(r, i)  {
 	vals = r.values[i];
 	var j;
@@ -95,21 +150,52 @@ function type_invariant_html(r, s, key)  {
 
 var hsz, vsz, paper;
 var hstep, vstep;
+var prime_ideals = [ ];
+
+function max_length(r)  {
+	var	max_length = 0;
+	for (var s = 0; s < r.count; s++)  {
+		if (r.bases_inds[s].length > max_length)
+			max_length = r.bases_inds[s].length;
+	}
+	
+	console.log(max_length);
+	
+	return max_length;
+}
 
 function draw_stepping(invars)  {
 	var	r;
+
+	r = invars;
+	
+	$('#display').height((max_length(r)+1)*80);
+	hsz = $('#display').width();
+	vsz = $('#display').height();
+	$('#display').empty();
+	paper = Raphael("display", hsz, vsz);
 	
 	paper.clear();
 	var overlay = $('#display-outer');
 	overlay.children('.label').remove();
 	$('#display-upper').children().remove();
 	
-	r = invars;
-		
 	var node, line;
 	
 	hstep = Math.floor(hsz / (r.count+1));
 	vstep = Math.floor(vsz / (Math.max.apply(null, r.ns)+1));
+	
+	if (r.count == 2)  {
+		prime_ideals = ['\\mathfrak{p}', '\\mathfrak{q}'];
+	}
+	else if (r.count == 3) {
+		prime_ideals = ['\\mathfrak{p}', '\\mathfrak{q}', '\\mathfrak{l}'];
+	}
+	else {
+		prime_ideals = [ ];
+		for (var s = 0; s < r.count; s++)
+			prime_ideals[s] = '\\mathfrak{p_{'+(s+1)+'}}';
+	}
 	
 	//console.log(hstep, vstep);
 	
@@ -127,12 +213,25 @@ function draw_stepping(invars)  {
 					this.transform("s1");
 				}
 			);
-			
-			values = $('<span class="values bases-values"></span>');
-			//html_bases_vals(r, s, m);
-			values.append(html_bases_vals(r, s, m));
+			values = $('<span class="values phi-polynomial"></span>');
+			values.append(phi_polynomial_html(r, s, m));
 			label = label_div(s, m);
-			label.append(values);		
+			label.append(values);
+			values = $('<span class="values bases-values switcher"></span>');
+			values.append($('<span class="1" style="display: inline;"></span>').append(html_bases_vals(r, s, m)));
+			values.append($('<span class="2" style="display: none;"></span>').append(html_bases_vals_diff(r, s, m)));
+			label.append('<br />', values);
+			
+			values.bind('click', function() {
+				var	max = 0, current = -1;
+				console.log($(this));
+			});
+			
+//			values = $('<span class="values bases-values-diff"></span>');
+//			values.append(html_bases_vals_diff(r, s, m));
+//			label.append(' / ', values);
+			
+			
 			//label = $('<div id="label__'+r+'_'+s+'" class="label"></div>');
 			//label.css('left', (s+1)*hstep).css('top', (m+1)*vstep);
 		}
@@ -140,7 +239,7 @@ function draw_stepping(invars)  {
 	
 	for (s = 0; s < r.count; s++)  {
 		label = ideal_label_div(s);
-		var ideal = $('<div class="ideal">$\\mathfrak{p}_{'+(s+1)+'}$</div>');
+		var ideal = $('<div class="ideal">$'+prime_ideals[s]+'$</div>');
 		label.append(ideal);
 		label.append('e = ' + type_invariant_html(r, s, 'e'));
 		label.append('<br />', 'f = ' + type_invariant_html(r, s, 'f'));
@@ -279,6 +378,18 @@ function drawTree(inv)  {
 //		}
 //	);
 	
+}
+
+function load_template(template)  {
+	var template_div = $('#id__'+template);
+	var textarea = $('#id__textarea');
+	
+	textarea.empty().append(template_div.contents().clone());
+}
+
+function switch_to(v)  {
+	$('.switcher').children().css({'display': 'none'});
+	$('.switcher .'+v).css({'display': 'inline'});
 }
 
 $(function() {
