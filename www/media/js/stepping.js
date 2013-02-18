@@ -37,7 +37,7 @@ function html_bases_vals_diff(r, s, m)  {
 	sep = '';
 	
 	for (var i = 0; i < vals.length; i++)  {
-		if (vals[i].substr(0, 1) != '-')
+		if (String(vals[i]).substr(0, 1) != '-')
 			vals[i] = '+' + vals[i];
 		html = html + sep + vals[i];
 		sep = ', ';
@@ -191,6 +191,9 @@ function draw_stepping(invars)  {
 	else if (r.count == 3) {
 		prime_ideals = ['\\mathfrak{p}', '\\mathfrak{q}', '\\mathfrak{l}'];
 	}
+	else if (r.count == 4) {
+		prime_ideals = ['\\mathfrak{p}', '\\mathfrak{q}', '\\mathfrak{r}', '\\mathfrak{s}'];
+	}
 	else {
 		prime_ideals = [ ];
 		for (var s = 0; s < r.count; s++)
@@ -249,6 +252,10 @@ function draw_stepping(invars)  {
 	// Lines
 	for (s = 1; s < r.count; s++)  {
 		line = paper.path(dotpath(s-1, 0, s, 0, hstep, vstep));
+		//line_arrow = paper.arrow((s)*hstep, (1)*vstep, (s+1)*hstep, (1)*vstep, 6);
+		//line = line_arrow[0];
+		//arrow = line_arrow[1];
+		
 		//line = paper.path("M"+(s)*hstep+","+vstep+"L"+(s+1)*hstep+","+vstep);
 		line.attr({"stroke": "#6f6", "stroke-width": 1.5});
 		
@@ -265,8 +272,11 @@ function draw_stepping(invars)  {
 	var olds = r.ind_delta[0];
 	for (var i = 1; i < r.ind_delta.length; i++)  {
 		var s = r.ind_delta[i];
-		line = paper.path(dotpath(olds, r.indices[i-1][olds], s, r.indices[i][s], hstep, vstep));
-		line.attr({"stroke": "#6f6", "stroke-width": 1.5});
+		line_arrow = paper.arrow((olds+1)*hstep, (r.indices[i-1][olds]+1)*vstep, (s+1)*hstep, (r.indices[i][s]+1)*vstep, 5);
+		line_arrow[0].attr({"stroke": "#6f6", "stroke-width": 1.5});
+		line_arrow[1].attr({"stroke": "#6f6", "fill": "#6f6"});
+		//line = paper.path(dotpath(olds, r.indices[i-1][olds], s, r.indices[i][s], hstep, vstep));
+		//line.attr({"stroke": "#6f6", "stroke-width": 1.5});
 		olds = s;
 		
 		values = $('<span class="values basis-values"></span>');
@@ -432,3 +442,11 @@ $(function() {
 	
 
 });
+
+Raphael.fn.arrow = function (x1, y1, x2, y2, size) {
+    var angle = Math.atan2(x1-x2,y2-y1);
+    angle = (angle / (2 * Math.PI)) * 360;
+    var arrowPath = this.path("M" + x2 + " " + y2 + " L" + (x2 - size) + " " + (y2 - size) + " L" + (x2 - size) + " " + (y2 + size) + " L" + x2 + " " + y2 ).attr("fill","black").rotate((90+angle),x2,y2);
+    var linePath = this.path("M" + x1 + " " + y1 + " L" + x2 + " " + y2);
+    return [linePath,arrowPath];
+}

@@ -32,6 +32,13 @@ def rat(n, d):
 def frac2rat(f):
     return Rat(f._numerator, f._denominator)
 
+def str2rat(s):
+    if '/' in s:
+        (num, denom) = s.split('/')
+        return rat(int(num), int(denom))
+    else:
+        return rat(int(s), 1)
+
 def prod(l):
     return reduce(mul, l, 1)
 
@@ -113,14 +120,41 @@ def basis_indices(tt):
                 nind.append([s] + dni)
         ind = nind
 
-    print tt
-    print [ [0]+i for i in ind ] + [ [1] + [0 for i in range(1, len(tt))] ]
+    #print tt
+    #print [ [0]+i for i in ind ] + [ [1] + [0 for i in range(1, len(tt))] ]
     return [ [0]+i for i in ind ] + [ [1] + [0 for i in range(1, len(tt))] ]
+
+def brute_force_alg(bases_vals):
+    bvs = [ list(bv) for bv in bases_vals ];
+
+    inf = rat(int(math.ceil(sum([ sum([sum(v) for v in bv]) for bv in bvs ]))), 1)
+    for s in range(0, len(bvs)):
+        bvs[s][len(bvs[s])-1][s] = inf
+
+    J = [ 0 for bv in bvs ]
+    n = sum([len(bv) for bv in bvs])-len(bvs)
+
+    print bvs
+
+    ind = [ [] for m in range(0, n) ]
+    vals = [ [] for m in range(0, n) ]
+    for i in range(0, reduce(mul, [len(bv) for bv in bvs])):
+        j = 0
+        for j in range(0, len(J)):
+            J[j] = i % len(bvs[j])
+            i = (i - J[j]) / len(bvs[j])
+        
+        m = sum(J)
+        S = [ frac2rat(sum([bvs[s][J[s]][r] for s in range(0, len(bvs))])) for r in range(0, len(bvs)) ]
+
+        if sum(J) < n:
+            vals[m].append(S)
+            ind[m].append(list(J))
+
+    return ind, vals
 
 def stepping_alg(bases_vals):
     bvs = [ list(bv) for bv in bases_vals ]
-
-    
 
     inf = rat(int(math.ceil(sum([ sum([sum(v) for v in bv]) for bv in bvs ]))), 1)
     for s in range(0, len(bvs)):
@@ -288,6 +322,8 @@ def set_hidden(invars):
         for k in range(0, len(invars['hidden'])):
             if i == k:
                 continue
+            elif isinstance(invars['hidden'][i][k], basestring):
+                invars['hidden'][i][k] = str2rat(invars['hidden'][i][k])
             elif invars['hidden'][i][k] == 0:
                 t = invars['types'][i][fetch_j(invars, i, k)-1]
                 invars['hidden'][i][k] = rat(t['h'], t['e'])
@@ -372,6 +408,25 @@ def changed_index(l1, l2):
 #pe, pf, ph, qe, qf, qh, j, hidden = inv_break()
 #pe, pf, ph, qe, qf, qh, j, hidden = inv_break_j1()
 
+def print_stepping_vs_brute(ind, vals, bind, bvals):
+    n = len(ind)
+    correct = True
+
+    print "\nStepping vs Brute:"
+    for m in range(0, n):
+        minvals = [ min(v) for v in bvals[m] ]
+        val = max(minvals)
+        i = minvals.index(val)
+        if val == min(vals[m]):
+            print "%d: %s --> |_ %s _| = %d  ==  %d = |_ %s _| <-- %s  TRUE" % (m, str(bind[m][i]), str(val), math.floor(val), math.floor(min(vals[m])), min(vals[m]), str(ind[m]))
+        else:
+            correct = False
+            print "%d: %s --> |_ %s _| = %d  ==  %d = |_ %s _| <-- %s  !! FALSE !!" % (m, str(bind[m][i]), str(val), math.floor(val), math.floor(min(vals[m])), min(vals[m]), str(ind[m]))
+            for i in range(0, len(bind[m])):
+                print "  %s: %s" % (str(bind[m][i]), str(bvals[m][i]),)
+
+    return correct
+
 def stepping_invariants(invars):
     #invars = inv_article_3()
     set_hidden(invars)
@@ -388,6 +443,7 @@ def stepping_invariants(invars):
 
     bases_inds = [ basis_indices(tt) for tt in invars['types'] ]
 
+    bind, bvals = brute_force_alg(bases_vals)
     ind, vals = stepping_alg(bases_vals)
 
     results = {
@@ -403,11 +459,14 @@ def stepping_invariants(invars):
         'ns': [ len(i) for i in bases_inds ]
     }
     results.update(invars)
-     
+    
+    if print_stepping_vs_brute(ind, vals, bind, bvals) is False:
+        results = { 'error' : 'Stepping algorithm failed!' }
+
     return json.dumps(results, cls=SteppingJSONEncoder)
 
 if __name__=="__main__":
-    print stepping_invariants(inv_article_3()) 
+    print stepping_invariants(inv_article()) 
 
 # invars = inv_article_3()
 # set_hidden(invars)
