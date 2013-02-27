@@ -1,6 +1,5 @@
 import sys
-
-import Image, ImageDraw, ImageFont
+import re
 
 import fractions
 import math
@@ -9,6 +8,7 @@ from operator import mul
 import numbers
 import json
 from json.encoder import JSONEncoder
+from itertools import product
 Rational = numbers.Rational
         
 
@@ -134,7 +134,7 @@ def brute_force_alg(bases_vals):
     J = [ 0 for bv in bvs ]
     n = sum([len(bv) for bv in bvs])-len(bvs)
 
-    print bvs
+    #print bvs
 
     ind = [ [] for m in range(0, n) ]
     vals = [ [] for m in range(0, n) ]
@@ -203,109 +203,269 @@ def stepping_alg_2(bvp, bvq):
 
     return ind, vals
 
-def draw_bases(bvp, bvq, ind, vals, indp, indq, invp, invq, hidden, j):
-
-    size = (600, max(len(bvp), len(bvq))*100 + 200)
-    im = Image.new("RGBA", size, (255, 255, 255, 255))
-    draw = ImageDraw.Draw(im)
-    dr = 4
-    pcol = 200
-    qcol = 400
-    sty = 180
-    font = ImageFont.truetype('/Library/Fonts/Verdana.ttf', 12)
-    bfont = ImageFont.truetype('./CloisterBlack.ttf', 34)
-
-    (w, h) = draw.textsize("p", font=bfont)
-    draw.text((pcol-(w/2), 20), "p", fill="black", font=bfont)
+def verify_inv(inv):
     
-    (w, h) = draw.textsize("q", font=bfont)
-    draw.text((qcol-(w/2), 20), "q", fill="black", font=bfont)
-   
-    label = "j = %d" % (j,)
-    (w, h) = draw.textsize(label, font=font)
-    draw.text((300-(w/2), 80), label, fill="gray", font=font)
+    hslopes = inv['hidden']
+    types = inv['types']
+
+    tcount = len(inv['types'])
+    for s in range(0, tcount):
+        for t in range(s+1, tcount):
+            j = fetch_j(inv, s, t)
+            if j == 0:
+                raise ValueError("index of coincidence cannot be 0, this is a single tree")
+            if j > len(types[s]):
+                raise ValueError("index of coincidence cannot be greater than %(r)d for t_%(s)d" % {'r': len(types[s]), 's': s+1})
+            if j > len(types[t]):
+                raise ValueError("index of coincidence cannot be greater than %(r)d for t_%(s)d" % {'r': len(types[s]), 't':t+1})
+            for i in range(0, j-1):
+                for var in ['e', 'f', 'h']:
+                    if types[s][i][var] != types[t][i][var]:
+                        raise ValueError("%(var)s_%(level)d does not match for t_%(s)d and t_%(t)d below index of coincidence j = %(j)d" % {
+                            'var': var,
+                            'level': i+1,
+                            's': s+1,
+                            't': t+1,
+                            'j': j })
+
+    for s in range(0, len(types)):
+        for i in range(0, len(types[s])-1):
+            if types[s][i]['e']*types[s][i]['f'] == 1:
+                raise ValueError("e_%(level)d * f_%(level)d = 1 in t_%(s)d" % {'level': i+1, 's': s+1})
+            if fractions.gcd(types[s][i]['h'], types[s][i]['e']) != 1:
+                raise ValueError("h_%(level)d and e_%(level)d are not relatively prime in t_%(s)d" % {'level': i+1, 's': s+1})
+
+
+    for s in range(0, tcount):
+        for t in range(0, tcount):
+            if s == t:
+                continue
+
+            lam_st, lam_ts = fetch_hidden(inv, s, t)
+            j = fetch_j(inv, s, t)
+            if lam_st > 0:
+                if lam_st != int(lam_st):
+                    raise ValueError("cutting slope lambda_{p_%(s)d}^{p_%(t)d} not an integer" % {'s': s+1, 't': t+1})
+                if lam_st > rat(types[s][j-1]['h'], types[s][j-1]['e']):
+                    raise ValueError("cutting slope lambda_{p_%(s)d}^{p_%(t)d} greater than h_%(j)d/e_%(j)d" % {'s': s+1, 't': t+1, 'j': j})
+
+    return True
     
+#def level_from_sequence(seq):
+#    return {'e': seq.pop(0), 'f': seq.pop(0), 'h': seq.pop(0)}
 
-    if hidden[0] == rat(invp[2][j-1], invp[0][j-1]):
-        philab = u"no refinement, "
+def types_from_sequence(r, seq):
+    
+    if sum(r) != len(seq):
+        raise ValueError("sequence not the correct length")
+
+    types = [ ]
+    v = ('e', 'f', 'h')
+    for r_s in r:
+        types.append([dict(zip(v, seq.pop(0))) for i in range(0, r_s)])
+
+    valid = True
+    for lvl in [lvl for levels in types for lvl in levels[:-1]]:
+        if lvl['e']*lvl['f'] == 1:
+            valid = False
+        if fractions.gcd(lvl['h'], lvl['e']) != 1:
+            valid = False
+
+    if valid:
+        return types
     else:
-        philab = u"refinement, "
-    draw.text((pcol-40, 80), "e = %s" %(str(invp[0]),), fill="gray", font=font)
-    draw.text((pcol-40, 100), "f = %s" %(str(invp[1]),), fill="gray", font=font)
-    draw.text((pcol-40, 120), "h = %s" %(str(invp[2]),), fill="gray", font=font)
-    draw.text((pcol-40, 140), philab + u"\u03BB = %s" %(unicode(hidden[0])), fill="gray", font=font)
+        return False
 
-    if hidden[1] == rat(invq[2][j-1], invq[0][j-1]):
-        philab = u"no refinement, "
-    else:
-        philab = u"refinement, "
-    draw.text((qcol-40, 80), "e = %s" %(str(invq[0]),), fill="gray", font=font)
-    draw.text((qcol-40, 100), "f = %s" %(str(invq[1]),), fill="gray", font=font)
-    draw.text((qcol-40, 120), "h = %s" %(str(invq[2]),), fill="gray", font=font)
-    draw.text((qcol-40, 140), philab + u"\u03BB = %s" %(unicode(hidden[1])), fill="gray", font=font)
+def basic_indco_from_r(r):
+    indco = [ ]
+    for s in range(0, len(r)-1):
+        indco.append([])
+        for t in range(s+1, len(r)):
+            indco[-1].append(1)
 
-    bvp[-1][0] = u"\u221E"
-    bvq[-1][1] = u"\u221E"
-    x, y = (pcol, sty)
-    for i in range(0, len(bvp)):
-        v = bvp[i]
-        draw.ellipse((x-dr, y-dr, x+dr, y+dr), fill="black")
+    return indco
 
-        label = "(%s, %s)" % (unicode(v[0]), unicode(v[1]))
-        (w, h) = draw.textsize(label, font=font)
-        draw.text((x-w-20, y-(h/2)-1), label, fill="black", font=font)
+def all_indco_for_r(r):
+    pools = [ ]
+    for s in range(0, len(r)-1):
+        for t in range(s+1, len(r)):
+            max_indco = min([r[s], r[t]])
+            pools.append(range(1, max_indco))
 
-        label = "("+(', '.join([str(m) for m in indp[i]]))+")"
-        (w2, h2) = draw.textsize(label, font=font)
-        draw.text((x-w-20-w2-20, y-(h/2)-1), label, fill="gray", font=font)
+    all_indco = [ ]
+    for seq in product(*pools):
+        seq = list(seq)
+        valid = True
+        indco = [ ]
+        for s in range(0, len(r)-1):
+            indco.append([])
+            for t in range(s+1, len(r)):
+                if t > s+1 and seq[0] > indco[-1][-1]:
+                    valid = False
+                elif s > 0:
+                    if seq[0] < indco[s-1][t-(s-1)-1]:
+                        valid = False
+                    elif indco[s-1][s-(s-1)-1] != indco[s-1][t-(s-1)-1] and seq[0] != min(indco[s-1][s-(s-1)-1], indco[s-1][t-(s-1)-1]):
+                        valid = False
+                indco[-1].append(seq.pop(0))
+        if valid:
+            all_indco.append(indco)
+    
+    return all_indco
+    
+def basic_hidden_from_r(r):
+    return [ [0 for s in range(0, len(r))] for t in range(0, len(r)) ]
+
+def all_hidden_for_types_indco(types, indco):
+    tcount = len(types)
+
+    pools = [ ]
+    for s in range(0, tcount):
+        for t in range(0, tcount):
+            if s == t:
+                pools.append([0])
+            else:
+                j = fetch_j({'j': indco}, s, t)
+                slope = rat(types[s][j-1]['h'], types[s][j-1]['e'])
+                pools.append([0] + [i for i in range(1, int(math.ceil(slope)))])
+
+    all_hidden = [ ]
+    for seq in product(*pools):
+        hidden = [list(seq[i:i+tcount]) for i in range(0, tcount*tcount, tcount)]
+        all_hidden.append(hidden)
+
+    return all_hidden
+
+def generate_sequences():
+    r = [2, 3]
+    okutsu_range = [1, 2, 3]
+    o_vars = okutsu_vars(okutsu_range)
+    o_vars.sort(key=lambda v: v[2], reverse=True)
+
+    generate_sequences_for_r(r, o_vars, okutsu_range)
+
+def okutsu_vars(okutsu_range):
+    okutsu_vars = []
+    for lvl in product(okutsu_range, okutsu_range, okutsu_range):
+        e, f, h = lvl
+        if e*f > 1 and fractions.gcd(h, e) == 1:
+            okutsu_vars.append(list(lvl))
+    return okutsu_vars
+
+def generate_sequences_for_r(r, okutsu_vars, hs):
+    #r = [3, 2]
+    seq = [3, 2, 2, 1, 1, 6, 3, 1, 1, 2, 1, 9, 1, 1, 12]
+    
+    pools = []
+    for r_s in r:
+        pools += [list(okutsu_vars) for i in range(0, r_s-1)]
+        pools.append([list(p) for p in product([1], [1], hs)])
+    #print pools
+    #pools = [list(okutsu_vars) for i in range(0, sum(r))]
+
+    total = 0
+    valid = 0
+    combinations = []
+
+#    types = [
+#        [
+#          {"e": 2, "f": 1, "h": 3},
+#          {"e": 1, "f": 1, "h": 2}
+#        ],
+#        [
+#          {"e": 1, "f": 2, "h": 6},
+#          {"e": 2, "f": 1, "h": 9},
+#          {"e": 1, "f": 1, "h": 5}
+#        ],
+#        [
+#          {"e": 1, "f": 2, "h": 5},
+#          {"e": 1, "f": 2, "h": 7},
+#          {"e": 1, "f": 2, "h": 8},
+#          {"e": 1, "f": 1, "h": 10}
+#        ],
+#        [
+#          {"e": 3, "f": 1, "h": 11},
+#          {"e": 2, "f": 1, "h": 7},
+#          {"e": 1, "f": 2, "h": 5},
+#          {"e": 1, "f": 1, "h": 4}
+#        ]
+#    ]
+#    all_indco = all_indco_for_r([2, 3, 4, 4])
+#    for indco in all_indco:
+#        print indco
+#        all_hidden = all_hidden_for_types_indco(types, indco)
+#        for hidden in all_hidden:
+#            inv = {
+#                'j': indco,
+#                'hidden': hidden,
+#                'types': types,
+#            }
+#            total += 1
+#            if total % 100 == 0:
+#                print total
+#            try:
+#                verify_inv(inv)
+#            except ValueError:
+#                continue
+#
+#            #print seq
+#            valid += 1
+#
+#    print "valid / total: %d / %d" % (valid, total,)
+#    return
+    
+    seqs = 0
+    
+    all_indco = all_indco_for_r(r)
+    okutsu_combs = prod([len(p) for p in pools])
+    print "Okutsu combinations per level: %d" % (len(okutsu_vars),)
+    print "Okutsu total combinations: %d" % (okutsu_combs,)
+    print "Index of coincidense combinations: %d" % (len(all_indco),)
+
+    for seq in product(*pools):
+        seq = list(seq)
+        types = types_from_sequence(r, list(seq))
         
-        y += 100
+        if types is False:
+            continue
 
-    x, y = (qcol, sty)
-    for i in range(0, len(bvq)):
-        v = bvq[i]
-        draw.ellipse((x-dr, y-dr, x+dr, y+dr), fill="black")
-        
-        label = "(%s, %s)" % (unicode(v[0]), unicode(v[1]))
-        (w, h) = draw.textsize(label, font=font)
-        draw.text((x+20, y-(h/2)-1), label, fill="black", font=font)
-        
-        label = "("+(', '.join([str(m) for m in indq[i]]))+")"
-        (w2, h2) = draw.textsize(label, font=font)
-        draw.text((x+w+20+20, y-(h/2)-1), label, fill="gray", font=font)
+        for indco in all_indco:
+            all_hidden = all_hidden_for_types_indco(types, indco)
+            if total == 0:
+                print "Max hidden slope combinations: %d" % (len(all_hidden),)
+                print "Max total combinations: %d" % (len(all_hidden)*len(all_indco)*okutsu_combs,)
+            for hidden in all_hidden:
+                inv = {
+                    'j': basic_indco_from_r(r),
+                    'hidden': basic_hidden_from_r(r),
+                    'types': types,
+                }
 
-        y += 100
+                total += 1
+                try:
+                    verify_inv(inv)
+                except ValueError, e:
+                    continue
+                
+                if re.match(r'^[1-9][0]+$', str(valid)):
+                    print "Prepared: %d" % (valid,)
+                
+                combinations.append(inv)
+                valid += 1
 
-    draw.line((pcol, sty, qcol, sty), width=2, fill="green")
-    lasti = [0, 0]
-    lastpos = (pcol, sty)
-    for i in range(0, len(ind)):
-        if i > 0:
-            if ind[i][0] != ind[i-1][0]:
-                newpos = (pcol, ind[i][0]*100 + sty)
-            elif ind[i][1] != ind[i-1][1]:
-                newpos = (qcol, ind[i][1]*100 + sty)
-            draw.line((lastpos, newpos), width=2, fill="green")
-            draw.ellipse((newpos[0]-dr/2, newpos[1]-dr/2, newpos[0]+dr/2, newpos[1]+dr/2), fill="green")
+    print "Testing combinations: %d / %d" % (valid, total,)
+
+    for i in range(0, valid):
+        if stepping_vs_brute_force(combinations[i]) is True:
+            pass
+            #print "True!"
         else:
-            newpos = lastpos
+            print "False!"
+            print inv
 
-        if ind[i][0] >= len(bvp)-1:
-            vals[i][0] = u"\u221E"
-        if ind[i][1] >= len(bvq)-1:
-            vals[i][1] = u"\u221E"
-        label = "(%s, %s)" % (unicode(vals[i][0]), unicode(vals[i][1]))
-        (w, h) = draw.textsize(label, font=font)
-        if newpos[0] == pcol:
-            draw.text((newpos[0]-w-20, newpos[1]+(h/2)+4), label, fill="blue", font=font)
-        else:
-            draw.text((newpos[0]+20, newpos[1]+(h/2)+4), label, fill="blue", font=font)
+        if int((i+1)*100/float(valid)) > int((i)*100/float(valid)):
+            print "Checked: %d%%" % (int((i+1)*100/float(valid)),)
 
-        lastpos = newpos
-
-
-    #im.save('/Users/hds/Desktop/tests.png', 'PNG')
-    return im
 
 def fetch_j(invars, t1i, t2i):
     if t1i == t2i:
@@ -338,6 +498,24 @@ def inv_article():
             [ {'e': 3, 'f': 2, 'h': 2},
               {'e': 1, 'f': 1, 'h': 6}, ],
             [ {'e': 3, 'f': 1, 'h': 1},
+              {'e': 2, 'f': 1, 'h': 9},
+              {'e': 1, 'f': 1, 'h': 12}, ],
+        ],
+    }
+
+    return invars
+
+def inv_article_invalid():
+    invars = {
+        'j': [ [1] ],
+        'hidden': [ [0, 1,],
+                    [1, 0],
+                  ],
+        'types': [
+            [ {'e': 3, 'f': 2, 'h': 4},
+              {'e': 2, 'f': 1, 'h': 7},
+              {'e': 1, 'f': 1, 'h': 6}, ],
+            [ {'e': 3, 'f': 1, 'h': 8},
               {'e': 2, 'f': 1, 'h': 9},
               {'e': 1, 'f': 1, 'h': 12}, ],
         ],
@@ -408,6 +586,33 @@ def changed_index(l1, l2):
 #pe, pf, ph, qe, qf, qh, j, hidden = inv_break()
 #pe, pf, ph, qe, qf, qh, j, hidden = inv_break_j1()
 
+def compare_results(ind1, vals1, ind2, vals2, printvals=False):
+    n = len(ind1)
+    correct = True
+
+    if printvals:
+        print "\nStepping vs Brute:"
+    for m in range(0, n):
+        minvals = [ min(v) for v in vals2[m] ]
+        val = max(minvals)
+        i = minvals.index(val)
+        if val == min(vals1[m]):
+            if printvals:
+                print "%d: %s --> |_ %s _| = %d  ==  %d = |_ %s _| <-- %s  TRUE" % (
+                        m, str(ind2[m][i]), str(val), math.floor(val),
+                        math.floor(min(vals1[m])), min(vals1[m]), str(ind1[m]))
+        else:
+            correct = False
+            if printvals:
+                print "%d: %s --> |_ %s _| = %d  ==  %d = |_ %s _| <-- %s  !! FALSE !!" % (
+                        m, str(ind2[m][i]), str(val), math.floor(val),
+                        math.floor(min(vals1[m])), min(vals1[m]), str(ind1[m]))
+                for i in range(0, len(ind2[m])):
+                    print "  %s: %s" % (str(ind2[m][i]), str(vals2[m][i]),)
+
+    return correct
+
+
 def print_stepping_vs_brute(ind, vals, bind, bvals):
     n = len(ind)
     correct = True
@@ -426,6 +631,28 @@ def print_stepping_vs_brute(ind, vals, bind, bvals):
                 print "  %s: %s" % (str(bind[m][i]), str(bvals[m][i]),)
 
     return correct
+
+def stepping_vs_brute_force(inv):
+    set_hidden(inv)
+
+    phi_vals = phi_values(inv)
+
+    bases_vals = [ basis_values(inv, phi_vals, s, 0) for s in range(0, len(phi_vals)) ]
+    bases_vals_diff = [ ]
+    for s in range(0, len(phi_vals)):
+        vals = [ bases_vals[s][0] ]
+        vals.extend([ [ Rat(bases_vals[s][m][i] - bases_vals[s][m-1][i]) for i in range(0, len(bases_vals[s][m])) ] for m in range(1, len(bases_vals[s])) ])
+        bases_vals_diff.append(vals)
+
+    bases_inds = [ basis_indices(tt) for tt in inv['types'] ]
+
+    st_ind, st_vals = stepping_alg(bases_vals)
+    bf_ind, bf_vals = brute_force_alg(bases_vals)
+
+    correct = compare_results(st_ind, st_vals, bf_ind, bf_vals)
+
+    return correct
+
 
 def stepping_invariants(invars):
     #invars = inv_article_3()
@@ -466,70 +693,6 @@ def stepping_invariants(invars):
     return json.dumps(results, cls=SteppingJSONEncoder)
 
 if __name__=="__main__":
-    print stepping_invariants(inv_article()) 
+    generate_sequences()
+    #print stepping_invariants(inv_article()) 
 
-# invars = inv_article_3()
-# set_hidden(invars)
-# 
-# print invars
-# 
-# phi_vals = phi_values(invars)
-# print phi_vals
-# 
-# bases_vals = [ basis_values(invars, phi_vals, s, 0) for s in range(0, len(phi_vals)) ]
-# print bases_vals
-# 
-# bases_inds = [ basis_indices(tt) for tt in invars['types'] ]
-# print bases_inds
-# 
-# ind, vals = stepping_alg(bases_vals)
-# 
-# print ind
-# print vals
-# 
-# results = {
-#     'phi_vals': phi_vals,
-#     'bases_vals': bases_vals,
-#     'bases_inds': bases_inds,
-#     'values': vals,
-#     'indices': ind,
-#     'ind_delta': [0] + [ changed_index(ind[i-1], ind[i]) for i in range(1, len(ind)) ],
-#     'count': len(phi_vals),
-#     'n': len(ind),
-#     'ns': [ len(i) for i in bases_inds ]
-# }
-# results.update(invars)
-#  
-# #print json.dumps(['0'])
-# print json.dumps(results, cls=SteppingJSONEncoder)
-# 
-# 
-# quit()
-
-##  
-##  #phip, phiq = phi_values(pe, pf, ph, qe, qf, qh, j, hidden)
-##  
-##  #print phip
-##  #print phiq
-##  
-##  bvp = basis_values(pe, pf, phip, 0)
-##  bvq = basis_values(qe, qf, phiq, 0)
-##  indp = basis_ind(pe, pf)
-##  indq =  basis_ind(qe, qf)
-##  
-##  #print ""
-##  #print bvp
-##  #print bvq
-##  
-##  ind, vals = stepping_alg(bvp, bvq)
-##  invp = [pe, pf, ph]
-##  invq = [qe, qf, qh]
-##  
-##  im = draw_bases(bvp, bvq, ind, vals, indp, indq, invp, invq, hidden, j)
-##  
-##  
-##  
-##  filename = '/Users/hds/Desktop/test.png'
-##  if len(sys.argv) > 1:
-##      filename = sys.argv[1]
-##  im.save(filename, 'PNG')
