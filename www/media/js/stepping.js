@@ -9,14 +9,14 @@ function html_bases_vals(r, s, m)  {
 	ind = r.bases_inds[s][m];
 	
 	if (ind[0] == 1)
-		vals[s] = '$\\infty$';
+		vals[s] = '$\\pmb{\\infty}$';
 	
 	html = '(';
 	sep = '';
 	
 	for (var i = 0; i < vals.length; i++)  {
 		if (i == s)
-			val = '<b>' + vals[i] + '</b>';
+			val = '<span class="own-value">' + vals[i] + '</span>';
 		else
 			val = vals[i];
 		html = html + sep + val;
@@ -35,7 +35,7 @@ function html_bases_vals_diff(r, s, m)  {
 	ind = r.bases_inds[s][m];
 	
 	if (ind[0] == 1)
-		vals[s] = '$\\infty$';
+		vals[s] = '$\\pmb{\\infty}$';
 	
 	html = '(';
 	sep = '';
@@ -43,7 +43,11 @@ function html_bases_vals_diff(r, s, m)  {
 	for (var i = 0; i < vals.length; i++)  {
 		if (String(vals[i]).substr(0, 1) != '-')
 			vals[i] = '+' + vals[i];
-		html = html + sep + vals[i];
+		if (i == s)
+			val = '<span class="own-value">' + vals[i] + '</span>';
+		else
+			val = vals[i];
+		html = html + sep + val;
 		sep = ', ';
 	}
 	html = html + ')';
@@ -89,6 +93,8 @@ function html_basis_val(r, i)  {
 	for (j = 0; j < vals.length; j++)  {
 		if (r.indices[i][j] == r.ns[j] - 1)
 			vals[j] = '$\\infty$';
+		if (r.indices.length > i+1 && r.indices[i][j] != r.indices[i+1][j])
+			vals[j] = '<span class="minimum">'+vals[j]+'</span>';
 	}
 	
 	html = '(';
@@ -312,8 +318,57 @@ function draw_stepping(invars)  {
 	else  {
 		$('.error').empty().css('display', 'none');
 	}
-	
+
+	$('#__id_vs_log').val(r.vs_log);
+	prettify_inv();
+
 	MathJax.Hub.Queue(["Typeset",MathJax.Hub]);	
+}
+
+function prettify_inv()  {
+	var nice_inv = JSON.stringify(JSON.parse($('#id__textarea').val()), replacer, 2);
+	var fixed_nice_inv = "";
+	var lines = nice_inv.split("\n");
+	for (var i in lines)  {
+		line = lines[i];
+		if (line.match(/^\s+"UnStr\<\</))  {
+			line = line.replace(/"UnStr\<\<(.+?)\>\>"/, "$1").replace(/\\"/g, "\"").replace(/(,|:)/g, "$1 "); 
+		}
+		fixed_nice_inv += line + "\n";
+	}
+	
+	$('#id__textarea').val(fixed_nice_inv);
+}
+
+function replacer(key, value)  {
+	var last_level = false;
+	if (typeof(value) == "object")  {
+		if (value instanceof Array)  {
+			last_level = true;
+			for (var i = 0; i < value.length; i++)  {
+				if (typeof(value[i]) == "object")  {
+					last_level = false;
+					break;
+				}
+			}
+		}
+		else  {
+			last_level = true;
+			for (var k in value)  {
+				if (typeof(value[k]) == "object")  {
+					last_level = false;
+					break;
+				}
+			}
+		}
+	}
+
+	if (last_level)  {
+		return "UnStr<<" + JSON.stringify(value, undefined, 0) + ">>";
+	}
+	else  {
+		return value;
+	}
 }
 
 function change_r()  {

@@ -51,7 +51,25 @@
 	color: #22c;
 }
 
+.own-value  {
+	font-weight: bold;
+}
+
+.minimum  {
+	text-decoration: underline;
+}
+
 .ideal  {
 	font-size: 15pt;
 	padding-bottom: 6px;
+}
+
+.log  {
+	text-align: center;
+}
+
+.log textarea  {
+	font-family: monospace;
+	margin: 0 auto;
+	display: none;
 }
