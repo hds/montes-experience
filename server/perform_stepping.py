@@ -5,10 +5,11 @@ import fractions
 import math
 import operator
 from operator import mul
+from random import choice
 import numbers
 import json
 from json.encoder import JSONEncoder
-from itertools import product
+from itertools import product, combinations
 Rational = numbers.Rational
         
 
@@ -48,6 +49,12 @@ def V_i(tt, i):
     else:
         i -= 1
         return tt[i-1]['e'] * tt[i-1]['f'] * (tt[i-1]['e'] * V_i(tt, i) + tt[i-1]['h'])
+
+def n_p(tt):
+    return prod([t['e']*t['f'] for t in tt])
+
+def total_degree(types):
+    return prod([n_p(tt) for tt in types])
 
 def m_i(tt, i):
     return prod([t['e']*t['f'] for t in tt[0:i-1]])
@@ -203,6 +210,14 @@ def stepping_alg_2(bvp, bvq):
 
     return ind, vals
 
+def make_hidden_for_triple(inv, triple):
+    hidden = [['-' for i in triple] for j in triple]
+    for i in range(0, len(triple)):
+        for j in range(0, len(triple)):
+            hidden[i][j] = inv['hidden'][triple[i]][triple[j]]
+
+    return hidden
+
 def verify_inv(inv):
     
     hslopes = inv['hidden']
@@ -241,13 +256,31 @@ def verify_inv(inv):
             if s == t:
                 continue
 
-            lam_st, lam_ts = fetch_hidden(inv, s, t)
+            lam_st, lam_ts = fetch_hidden(inv, s, t, or_slope=False)
             j = fetch_j(inv, s, t)
             if lam_st > 0:
                 if lam_st != int(lam_st):
+                    print lam_st
                     raise ValueError("cutting slope lambda_{p_%(s)d}^{p_%(t)d} not an integer" % {'s': s+1, 't': t+1})
                 if lam_st > rat(types[s][j-1]['h'], types[s][j-1]['e']):
                     raise ValueError("cutting slope lambda_{p_%(s)d}^{p_%(t)d} greater than h_%(j)d/e_%(j)d" % {'s': s+1, 't': t+1, 'j': j})
+
+    for s, t, u in combinations(range(0, tcount), 3):
+        if fetch_j(inv, s, t) == fetch_j(inv, s, u) == fetch_j(inv, t, u):
+            hidden = make_hidden_for_triple(inv, [s, t, u])
+            if hidden[0][1] == hidden[0][2] and hidden[2][0] == hidden[2][1] \
+                    and hidden[1][0] == hidden[1][2]:
+                pass
+            elif hidden[0][1] == hidden[0][2] and hidden[1][0] == hidden[2][0] \
+                    and hidden[1][0] > hidden[1][2] \
+                    and hidden[2][0] > hidden[2][1]:
+                pass
+            elif hidden[0][2] == hidden[1][2] and hidden[2][0] == hidden[2][1] \
+                    and hidden[0][2] > hidden[0][1] \
+                    and hidden[1][2] > hidden[1][0]:
+                pass
+            else:
+                raise ValueError("hidden values are not valid for triple (t_%(s)d, t_%(t)d, t_%(u)d)" % ({'s': s+1, 't': t+1, 'u': u+1})) 
 
     return True
     
@@ -336,13 +369,16 @@ def all_hidden_for_types_indco(types, indco):
 
     return all_hidden
 
-def generate_sequences():
-    r = [2, 3]
-    okutsu_range = [1, 2, 3]
+def generate_sequences(random=0):
+    r = [2, 3, 2]
+    okutsu_range = [1, 2, 3, 4]
     o_vars = okutsu_vars(okutsu_range)
     o_vars.sort(key=lambda v: v[2], reverse=True)
 
-    generate_sequences_for_r(r, o_vars, okutsu_range)
+    if random > 0:
+        generate_random_sequences_for_r(r, o_vars, okutsu_range, count=random)
+    else:
+        generate_sequences_for_r(r, o_vars, okutsu_range)
 
 def okutsu_vars(okutsu_range):
     okutsu_vars = []
@@ -351,6 +387,59 @@ def okutsu_vars(okutsu_range):
         if e*f > 1 and fractions.gcd(h, e) == 1:
             okutsu_vars.append(list(lvl))
     return okutsu_vars
+
+def generate_random_sequences_for_r(r, okutsu_vars, hs, count=100):
+   
+    tpassed, tfailed, tskipped = (0, 0, 0)
+    for test in range(0, count):
+        seq = []
+        for r_s in r:
+            seq += [list(choice(okutsu_vars)) for i in range(0, r_s-1)]
+            seq.append([1, 1, choice(hs)])
+        
+        types = types_from_sequence(r, list(seq))
+        if types is False:
+            continue
+
+        print "--=== Test %d (n = %d) ===--" % (test, total_degree(types))
+        all_indco = all_indco_for_r(r)
+        for indco in all_indco:
+            all_hidden = all_hidden_for_types_indco(types, indco)
+            #print "Hidden slope combinations: %d" % (len(all_hidden),)
+            passed = 0
+            failed = 0
+            skipped = 0
+            for hidden in all_hidden:
+                inv = {
+                    'j': indco,
+                    'hidden': hidden,
+                    'types': types,
+                }
+
+                try:
+                    verify_inv(inv)
+                except ValueError, e:
+                    skipped += 1
+                    continue
+                    
+                if stepping_vs_brute_force(inv) is True:
+                    passed += 1
+                    #print "Pass"
+                    pass
+                else:
+                    failed += 1
+                    print "FAIL: %s" % (json.dumps(inv, cls=SteppingJSONEncoder),)
+#                    if failed > 4:
+#                        print "Lots failed, skipping remainder of tests."
+#                        break
+            print "    P: %d, F: %d, S: %d\n" % (passed, failed, skipped,)
+            tpassed += passed
+            tfailed += failed
+            tskipped += skipped
+
+    print "\nTotal Passed: %d\nTotal Failed: %d\nTotal Skipped: %d" % (
+            tpassed, tfailed, tskipped,)
+
 
 def generate_sequences_for_r(r, okutsu_vars, hs):
     #r = [3, 2]
@@ -366,53 +455,6 @@ def generate_sequences_for_r(r, okutsu_vars, hs):
     total = 0
     valid = 0
     combinations = []
-
-#    types = [
-#        [
-#          {"e": 2, "f": 1, "h": 3},
-#          {"e": 1, "f": 1, "h": 2}
-#        ],
-#        [
-#          {"e": 1, "f": 2, "h": 6},
-#          {"e": 2, "f": 1, "h": 9},
-#          {"e": 1, "f": 1, "h": 5}
-#        ],
-#        [
-#          {"e": 1, "f": 2, "h": 5},
-#          {"e": 1, "f": 2, "h": 7},
-#          {"e": 1, "f": 2, "h": 8},
-#          {"e": 1, "f": 1, "h": 10}
-#        ],
-#        [
-#          {"e": 3, "f": 1, "h": 11},
-#          {"e": 2, "f": 1, "h": 7},
-#          {"e": 1, "f": 2, "h": 5},
-#          {"e": 1, "f": 1, "h": 4}
-#        ]
-#    ]
-#    all_indco = all_indco_for_r([2, 3, 4, 4])
-#    for indco in all_indco:
-#        print indco
-#        all_hidden = all_hidden_for_types_indco(types, indco)
-#        for hidden in all_hidden:
-#            inv = {
-#                'j': indco,
-#                'hidden': hidden,
-#                'types': types,
-#            }
-#            total += 1
-#            if total % 100 == 0:
-#                print total
-#            try:
-#                verify_inv(inv)
-#            except ValueError:
-#                continue
-#
-#            #print seq
-#            valid += 1
-#
-#    print "valid / total: %d / %d" % (valid, total,)
-#    return
     
     seqs = 0
     
@@ -436,8 +478,8 @@ def generate_sequences_for_r(r, okutsu_vars, hs):
                 print "Max total combinations: %d" % (len(all_hidden)*len(all_indco)*okutsu_combs,)
             for hidden in all_hidden:
                 inv = {
-                    'j': basic_indco_from_r(r),
-                    'hidden': basic_hidden_from_r(r),
+                    'j': indco,
+                    'hidden': hidden,
                     'types': types,
                 }
 
@@ -474,8 +516,20 @@ def fetch_j(invars, t1i, t2i):
         t1i, t2i = t2i, t1i
     return invars['j'][t1i][t2i-t1i-1]
 
-def fetch_hidden(invars, t1i, t2i):
-    return [ invars['hidden'][t1i][t2i], invars['hidden'][t2i][t1i] ]
+def hidden_or_slope(invars, t1i, t2i):
+    if isinstance(invars['hidden'][t1i][t2i], basestring):
+        return str2rat(invars['hidden'][t1i][t2i])
+    elif invars['hidden'][t1i][t2i] == 0:
+        t = invars['types'][t1i][fetch_j(invars, t1i, t2i)-1]
+        return rat(t['h'], t['e'])
+    else:
+        return invars['hidden'][t1i][t2i]
+
+def fetch_hidden(invars, t1i, t2i, or_slope=True):
+    if or_slope is True:
+        return [ hidden_or_slope(invars, t1i, t2i), hidden_or_slope(invars, t2i, t1i) ]
+    else:
+        return [ invars['hidden'][t1i][t2i], invars['hidden'][t2i][t1i] ]
 
 def set_hidden(invars):
     for i in range(0, len(invars['hidden'])):
@@ -633,7 +687,7 @@ def print_stepping_vs_brute(ind, vals, bind, bvals):
     return correct
 
 def stepping_vs_brute_force(inv):
-    set_hidden(inv)
+    #set_hidden(inv)
 
     phi_vals = phi_values(inv)
 
@@ -656,6 +710,15 @@ def stepping_vs_brute_force(inv):
 
 def stepping_invariants(invars):
     #invars = inv_article_3()
+
+    valid = True
+    error = None
+    try:
+        verify_inv(invars)
+    except ValueError, e:
+        print "INVALID:", e
+        valid = False
+        error = str(e)
     set_hidden(invars)
 
     phi_vals = phi_values(invars)
@@ -683,16 +746,22 @@ def stepping_invariants(invars):
         'ind_delta': [0] + [ changed_index(ind[i-1], ind[i]) for i in range(1, len(ind)) ],
         'count': len(phi_vals),
         'n': len(ind),
-        'ns': [ len(i) for i in bases_inds ]
+        'ns': [ len(i) for i in bases_inds ],
+        'valid': valid,
     }
     results.update(invars)
     
     if print_stepping_vs_brute(ind, vals, bind, bvals) is False:
-        results = { 'error' : 'Stepping algorithm failed!' }
-
+        correct = False
+        if error is None:
+            error = 'Stepping algorithm failed!'
+    else:
+        correct = True
+    results.update({'error': error, 'correct': correct})
+    
     return json.dumps(results, cls=SteppingJSONEncoder)
 
 if __name__=="__main__":
-    generate_sequences()
+    generate_sequences(random=100)
     #print stepping_invariants(inv_article()) 
 
