@@ -34,6 +34,11 @@
 	z-index: 4;
 }
 
+.error  {
+	width: 360px;
+	color: #f33;
+}
+
 .entry-panel textarea  {
 	font-family: monospace;
 }

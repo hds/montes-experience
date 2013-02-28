@@ -15,7 +15,11 @@ function html_bases_vals(r, s, m)  {
 	sep = '';
 	
 	for (var i = 0; i < vals.length; i++)  {
-		html = html + sep + vals[i];
+		if (i == s)
+			val = '<b>' + vals[i] + '</b>';
+		else
+			val = vals[i];
+		html = html + sep + val;
 		sep = ', ';
 	}
 	html = html + ')';
@@ -164,10 +168,27 @@ function max_length(r)  {
 	return max_length;
 }
 
+function get_line_colour(invars)  {
+	console.log(invars.valid);
+	if (invars.valid)  {
+		if (invars.correct)
+			return "#6f6";
+		else
+			return "#f33";
+	}
+	else  {
+		if (invars.correct)
+			return "#6ff";
+		else
+			return "#f3f";
+	}
+}
+
 function draw_stepping(invars)  {
 	var	r;
 
 	r = invars;
+	line_colour = get_line_colour(r);
 	
 	$('#display').height((max_length(r)+1)*80);
 	hsz = $('#display').width();
@@ -257,7 +278,7 @@ function draw_stepping(invars)  {
 		//arrow = line_arrow[1];
 		
 		//line = paper.path("M"+(s)*hstep+","+vstep+"L"+(s+1)*hstep+","+vstep);
-		line.attr({"stroke": "#6f6", "stroke-width": 1.5});
+		line.attr({"stroke": line_colour, "stroke-width": 1.5});
 		
 		values = $('<span class="values basis-values"></span>');
 		values.append(html_basis_val(r, 0));
@@ -273,8 +294,8 @@ function draw_stepping(invars)  {
 	for (var i = 1; i < r.ind_delta.length; i++)  {
 		var s = r.ind_delta[i];
 		line_arrow = paper.arrow((olds+1)*hstep, (r.indices[i-1][olds]+1)*vstep, (s+1)*hstep, (r.indices[i][s]+1)*vstep, 5);
-		line_arrow[0].attr({"stroke": "#6f6", "stroke-width": 1.5});
-		line_arrow[1].attr({"stroke": "#6f6", "fill": "#6f6"});
+		line_arrow[0].attr({"stroke": line_colour, "stroke-width": 1.5});
+		line_arrow[1].attr({"stroke": line_colour, "fill": line_colour});
 		//line = paper.path(dotpath(olds, r.indices[i-1][olds], s, r.indices[i][s], hstep, vstep));
 		//line.attr({"stroke": "#6f6", "stroke-width": 1.5});
 		olds = s;
@@ -283,6 +304,13 @@ function draw_stepping(invars)  {
 		values.append(html_basis_val(r, i));
 		label = label_div(s, r.indices[i][s]);
 		label.append('<br />', values);
+	}
+
+	if (r.error)  {
+		$('.error').empty().append(r.error).css('display', 'block');
+	}
+	else  {
+		$('.error').empty().css('display', 'none');
 	}
 	
 	MathJax.Hub.Queue(["Typeset",MathJax.Hub]);	
