@@ -54,7 +54,7 @@ def n_p(tt):
     return prod([t['e']*t['f'] for t in tt])
 
 def total_degree(types):
-    return prod([n_p(tt) for tt in types])
+    return sum([n_p(tt) for tt in types])
 
 def m_i(tt, i):
     return prod([t['e']*t['f'] for t in tt[0:i-1]])
@@ -272,12 +272,14 @@ def verify_inv(inv):
                     and hidden[1][0] == hidden[1][2]:
                 pass
             elif hidden[0][1] == hidden[0][2] and hidden[1][0] == hidden[2][0] \
-                    and hidden[1][0] > hidden[1][2] \
-                    and hidden[2][0] > hidden[2][1]:
+                    and hidden[1][0] > 0 \
+                    and hidden[1][0] < hidden[1][2] \
+                    and hidden[2][0] < hidden[2][1]:
                 pass
             elif hidden[0][2] == hidden[1][2] and hidden[2][0] == hidden[2][1] \
-                    and hidden[0][2] > hidden[0][1] \
-                    and hidden[1][2] > hidden[1][0]:
+                    and hidden[0][2] > 0 \
+                    and hidden[0][2] < hidden[0][1] \
+                    and hidden[1][2] < hidden[1][0]:
                 pass
             else:
                 raise ValueError("hidden values are not valid for triple (t_%(s)d, t_%(t)d, t_%(u)d)" % ({'s': s+1, 't': t+1, 'u': u+1})) 
@@ -370,7 +372,7 @@ def all_hidden_for_types_indco(types, indco):
     return all_hidden
 
 def generate_sequences(random=0):
-    r = [2, 3, 2]
+    r = [3, 3, 3]
     okutsu_range = [1, 2, 3, 4]
     o_vars = okutsu_vars(okutsu_range)
     o_vars.sort(key=lambda v: v[2], reverse=True)
@@ -388,6 +390,16 @@ def okutsu_vars(okutsu_range):
             okutsu_vars.append(list(lvl))
     return okutsu_vars
 
+def test_single():
+    r = [2, 3, 2]
+    types = [[{"h": 4, "e": 3, "f": 4}, {"h": 3, "e": 1, "f": 1}], [{"h": 4, "e": 1, "f": 2}, {"h": 1, "e": 2, "f": 4}, {"h": 4, "e": 1, "f": 1}], [{"h": 4, "e": 3, "f": 4}, {"h": 1, "e": 1, "f": 1}]]
+    types = [[{"h": 4, "e": 1, "f": 3}, {"h": 1, "e": 1, "f": 1}], [{"h": 4, "e": 1, "f": 3}, {"h": 4, "e": 1, "f": 4}, {"h": 2, "e": 1, "f": 1}], [{"h": 3, "e": 1, "f": 3}, {"h": 2, "e": 1, "f": 1}]]
+
+    tpassed, tfailed, tskipped = test_all_for_types(r, types)
+    print "\nTotal Passed: %d\nTotal Failed: %d\nTotal Skipped: %d" % (
+            tpassed, tfailed, tskipped,)
+
+
 def generate_random_sequences_for_r(r, okutsu_vars, hs, count=100):
    
     tpassed, tfailed, tskipped = (0, 0, 0)
@@ -401,44 +413,59 @@ def generate_random_sequences_for_r(r, okutsu_vars, hs, count=100):
         if types is False:
             continue
 
-        print "--=== Test %d (n = %d) ===--" % (test, total_degree(types))
-        all_indco = all_indco_for_r(r)
-        for indco in all_indco:
-            all_hidden = all_hidden_for_types_indco(types, indco)
-            #print "Hidden slope combinations: %d" % (len(all_hidden),)
-            passed = 0
-            failed = 0
-            skipped = 0
-            for hidden in all_hidden:
-                inv = {
-                    'j': indco,
-                    'hidden': hidden,
-                    'types': types,
-                }
-
-                try:
-                    verify_inv(inv)
-                except ValueError, e:
-                    skipped += 1
-                    continue
-                    
-                if stepping_vs_brute_force(inv) is True:
-                    passed += 1
-                    #print "Pass"
-                    pass
-                else:
-                    failed += 1
-                    print "FAIL: %s" % (json.dumps(inv, cls=SteppingJSONEncoder),)
-#                    if failed > 4:
-#                        print "Lots failed, skipping remainder of tests."
-#                        break
-            print "    P: %d, F: %d, S: %d\n" % (passed, failed, skipped,)
-            tpassed += passed
-            tfailed += failed
-            tskipped += skipped
+        passed, failed, skipped = test_all_for_types(r,
+                                                     types,
+                                                     name="Test %d" % (test,))
+        tpassed += passed
+        tfailed += failed
+        tskipped += skipped
 
     print "\nTotal Passed: %d\nTotal Failed: %d\nTotal Skipped: %d" % (
             tpassed, tfailed, tskipped,)
+
+def test_all_for_types(r, types, name="Test"):
+    tpassed, tfailed, tskipped = (0, 0, 0)
+
+    print "\n--=== %s (n = %d) ===--" % (name, total_degree(types))
+    print json.dumps(types, cls=SteppingJSONEncoder)
+    all_indco = all_indco_for_r(r)
+    for indco in all_indco:
+        all_hidden = all_hidden_for_types_indco(types, indco)
+        #print "Hidden slope combinations: %d" % (len(all_hidden),)
+        passed = 0
+        failed = 0
+        skipped = 0
+        for hidden in all_hidden:
+            inv = {
+                'j': indco,
+                'hidden': hidden,
+                'types': types,
+            }
+
+            try:
+                verify_inv(inv)
+            except ValueError, e:
+                skipped += 1
+                continue
+                
+            if stepping_vs_brute_force(inv) is True:
+                passed += 1
+                #print "Pass"
+                pass
+            else:
+                failed += 1
+                print "FAIL: %s" % (json.dumps(inv, cls=SteppingJSONEncoder),)
+#                    if failed > 4:
+#                        print "Lots failed, skipping remainder of tests."
+#                        break
+        print "    P: %d, F: %d, S: %d    %s" % (
+                passed, failed, skipped,
+                json.dumps(indco, cls=SteppingJSONEncoder))
+        tpassed += passed
+        tfailed += failed
+        tskipped += skipped
+
+    return tpassed, tfailed, tskipped
 
 
 def generate_sequences_for_r(r, okutsu_vars, hs):
@@ -670,21 +697,22 @@ def compare_results(ind1, vals1, ind2, vals2, printvals=False):
 def print_stepping_vs_brute(ind, vals, bind, bvals):
     n = len(ind)
     correct = True
-
-    print "\nStepping vs Brute:"
+    output = ''
+    
+    output += "Stepping vs Brute:\n"
     for m in range(0, n):
         minvals = [ min(v) for v in bvals[m] ]
         val = max(minvals)
         i = minvals.index(val)
         if val == min(vals[m]):
-            print "%d: %s --> |_ %s _| = %d  ==  %d = |_ %s _| <-- %s  TRUE" % (m, str(bind[m][i]), str(val), math.floor(val), math.floor(min(vals[m])), min(vals[m]), str(ind[m]))
+            output += "%d: %s --> |_ %s _| = %d  ==  %d = |_ %s _| <-- %s  TRUE\n" % (m, str(bind[m][i]), str(val), math.floor(val), math.floor(min(vals[m])), min(vals[m]), str(ind[m]))
         else:
             correct = False
-            print "%d: %s --> |_ %s _| = %d  ==  %d = |_ %s _| <-- %s  !! FALSE !!" % (m, str(bind[m][i]), str(val), math.floor(val), math.floor(min(vals[m])), min(vals[m]), str(ind[m]))
+            output += "%d: %s --> |_ %s _| = %d  ==  %d = |_ %s _| <-- %s  !! FALSE !!\n" % (m, str(bind[m][i]), str(val), math.floor(val), math.floor(min(vals[m])), min(vals[m]), str(ind[m]))
             for i in range(0, len(bind[m])):
-                print "  %s: %s" % (str(bind[m][i]), str(bvals[m][i]),)
+                output += "  %s: %s\n" % (str(bind[m][i]), str(bvals[m][i]),)
 
-    return correct
+    return correct, output
 
 def stepping_vs_brute_force(inv):
     #set_hidden(inv)
@@ -729,7 +757,6 @@ def stepping_invariants(invars):
         vals = [ bases_vals[s][0] ]
         vals.extend([ [ Rat(bases_vals[s][m][i] - bases_vals[s][m-1][i]) for i in range(0, len(bases_vals[s][m])) ] for m in range(1, len(bases_vals[s])) ])
         bases_vals_diff.append(vals)
-        print 'vals:', vals
 
     bases_inds = [ basis_indices(tt) for tt in invars['types'] ]
 
@@ -751,17 +778,18 @@ def stepping_invariants(invars):
     }
     results.update(invars)
     
-    if print_stepping_vs_brute(ind, vals, bind, bvals) is False:
-        correct = False
+    correct, output = print_stepping_vs_brute(ind, vals, bind, bvals)
+    if correct is False:
         if error is None:
             error = 'Stepping algorithm failed!'
-    else:
-        correct = True
-    results.update({'error': error, 'correct': correct})
+    results.update({'error': error, 'correct': correct, 'vs_log': output})
+    
     
     return json.dumps(results, cls=SteppingJSONEncoder)
 
 if __name__=="__main__":
+    #test_single()
     generate_sequences(random=100)
+
     #print stepping_invariants(inv_article()) 
 
