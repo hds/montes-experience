@@ -477,7 +477,7 @@ function load_template(template)  {
 	var template_div = $('#id__'+template);
 	var textarea = $('#id__textarea');
 	
-	textarea.empty().append(template_div.contents().clone());
+	textarea.val(template_div.contents().text());
 }
 
 function switch_to(v)  {
