@@ -212,7 +212,13 @@ function draw_stepping(invars)  {
 	hstep = Math.floor(hsz / (r.count+1));
 	vstep = Math.floor(vsz / (Math.max.apply(null, r.ns)+1));
 	
-	if (r.count == 2)  {
+	if (r.primes)  {
+		prime_ideals = [ ];
+		for (var i in r.primes)  {
+			prime_ideals[i] = '\\mathfrak{' + r.primes[i] + '}';
+		}
+	}
+	else if (r.count == 2)  {
 		prime_ideals = ['\\mathfrak{p}', '\\mathfrak{q}'];
 	}
 	else if (r.count == 3) {
@@ -331,7 +337,7 @@ function prettify_inv()  {
 	var lines = nice_inv.split("\n");
 	for (var i in lines)  {
 		line = lines[i];
-		if (line.match(/^\s+"UnStr\<\</))  {
+		if (line.match(/^\s+("\w+":\s+)?"UnStr\<\</))  {
 			line = line.replace(/"UnStr\<\<(.+?)\>\>"/, "$1").replace(/\\"/g, "\"").replace(/(,|:)/g, "$1 "); 
 		}
 		fixed_nice_inv += line + "\n";
