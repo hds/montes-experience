@@ -347,7 +347,33 @@ def all_indco_for_r(r):
             all_indco.append(indco)
     
     return all_indco
-    
+   
+def valid_indco_for_r_types(r, types):
+    tcount = len(types)
+    valid_indco = [ ]
+    for indco in all_indco_for_r(r):
+        if indco_valid_for_types(indco, types):
+            valid_indco.append(indco)
+
+    return valid_indco
+
+def indco_valid_for_types(indco, types):
+    tcount = len(types)
+    for s in range(0, tcount):
+        for t in range(s+1, tcount):
+            j = fetch_j({'j': indco}, s, t)
+            for i in range(0, j-1):
+                for var in ['e', 'f', 'h']:
+                    if types[s][i][var] != types[t][i][var]:
+#                        print "%(var)s_%(level)d does not match for t_%(s)d and t_%(t)d below index of coincidence j = %(j)d" % {
+#                            'var': var,
+#                            'level': i+1,
+#                            's': s+1,
+#                            't': t+1,
+#                            'j': j }
+                        return False
+    return True
+
 def basic_hidden_from_r(r):
     return [ [0 for s in range(0, len(r))] for t in range(0, len(r)) ]
 
@@ -394,6 +420,8 @@ def test_single():
     r = [2, 3, 2]
     types = [[{"h": 4, "e": 3, "f": 4}, {"h": 3, "e": 1, "f": 1}], [{"h": 4, "e": 1, "f": 2}, {"h": 1, "e": 2, "f": 4}, {"h": 4, "e": 1, "f": 1}], [{"h": 4, "e": 3, "f": 4}, {"h": 1, "e": 1, "f": 1}]]
     types = [[{"h": 4, "e": 1, "f": 3}, {"h": 1, "e": 1, "f": 1}], [{"h": 4, "e": 1, "f": 3}, {"h": 4, "e": 1, "f": 4}, {"h": 2, "e": 1, "f": 1}], [{"h": 3, "e": 1, "f": 3}, {"h": 2, "e": 1, "f": 1}]]
+    r = [3, 3, 3]
+    types = [[{"h": 1, "e": 1, "f": 4}, {"h": 1, "e": 1, "f": 2}, {"h": 2, "e": 1, "f": 1}], [{"h": 1, "e": 2, "f": 2}, {"h": 3, "e": 4, "f": 1}, {"h": 2, "e": 1, "f": 1}], [{"h": 2, "e": 1, "f": 3}, {"h": 4, "e": 1, "f": 3}, {"h": 3, "e": 1, "f": 1}]]
 
     tpassed, tfailed, tskipped = test_all_for_types(r, types)
     print "\nTotal Passed: %d\nTotal Failed: %d\nTotal Skipped: %d" % (
@@ -427,8 +455,10 @@ def test_all_for_types(r, types, name="Test"):
     tpassed, tfailed, tskipped = (0, 0, 0)
 
     print "\n--=== %s (n = %d) ===--" % (name, total_degree(types))
-    print json.dumps(types, cls=SteppingJSONEncoder)
-    all_indco = all_indco_for_r(r)
+    print "\"r\": %s" % (json.dumps(r, cls=SteppingJSONEncoder),)
+    print "\"types\": %s" % (json.dumps(types, cls=SteppingJSONEncoder),)
+    #all_indco = all_indco_for_r(r)
+    all_indco = valid_indco_for_r_types(r, types)
     for indco in all_indco:
         all_hidden = all_hidden_for_types_indco(types, indco)
         #print "Hidden slope combinations: %d" % (len(all_hidden),)
@@ -446,6 +476,7 @@ def test_all_for_types(r, types, name="Test"):
                 verify_inv(inv)
             except ValueError, e:
                 skipped += 1
+                print "Skipped (%s): %s" % (str(e), str(hidden),)
                 continue
                 
             if stepping_vs_brute_force(inv) is True:
@@ -788,8 +819,8 @@ def stepping_invariants(invars):
     return json.dumps(results, cls=SteppingJSONEncoder)
 
 if __name__=="__main__":
-    #test_single()
-    generate_sequences(random=100)
+    test_single()
+    #generate_sequences(random=100)
 
     #print stepping_invariants(inv_article()) 
 
