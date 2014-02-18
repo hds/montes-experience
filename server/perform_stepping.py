@@ -27,7 +27,7 @@ class SteppingJSONEncoder(JSONEncoder):
             return str(repr(o))
         return JSONEncoder.default(self, o)
 
-def rat(n, d):
+def rat(n, d=1):
     return Rat(n, d)
 
 def frac2rat(f):
@@ -63,6 +63,10 @@ def p_val(tt, i):
     return rat(V_i(tt, i) + rat(tt[i-1]['h'], tt[i-1]['e']), prod([t['e'] for t in tt[0:i-1]]))
 
 def c_val(ptt, stt, i, j, hidden):
+    # index of coincidence 0 means that "cross values" are all zero.
+    if j == 0:
+        return rat(0)
+
     if i < j:
         return p_val(ptt, i)
     elif i == j:
@@ -223,12 +227,15 @@ def verify_inv(inv):
     hslopes = inv['hidden']
     types = inv['types']
 
+    #########################
+    ## Indices of coincidence
+
     tcount = len(inv['types'])
     for s in range(0, tcount):
         for t in range(s+1, tcount):
             j = fetch_j(inv, s, t)
-            if j == 0:
-                raise ValueError("index of coincidence cannot be 0, this is a single tree")
+#            if j == 0:
+#                raise ValueError("index of coincidence cannot be 0, this is a single tree")
             if j > len(types[s]):
                 raise ValueError("index of coincidence cannot be greater than %(r)d for t_%(s)d" % {'r': len(types[s]), 's': s+1})
             if j > len(types[t]):
@@ -243,6 +250,8 @@ def verify_inv(inv):
                             't': t+1,
                             'j': j })
 
+    ##########
+    ## Lambdas
     for s in range(0, len(types)):
         for i in range(0, len(types[s])-1):
             if types[s][i]['e']*types[s][i]['f'] == 1:
@@ -250,7 +259,8 @@ def verify_inv(inv):
             if fractions.gcd(types[s][i]['h'], types[s][i]['e']) != 1:
                 raise ValueError("h_%(level)d and e_%(level)d are not relatively prime in t_%(s)d" % {'level': i+1, 's': s+1})
 
-
+    #################
+    ## Cutting slopes
     for s in range(0, tcount):
         for t in range(0, tcount):
             if s == t:
@@ -258,6 +268,8 @@ def verify_inv(inv):
 
             lam_st, lam_ts = fetch_hidden(inv, s, t, or_slope=False)
             j = fetch_j(inv, s, t)
+            if j == 0 and (lam_st != 0 or lam_ts != 0):
+                raise ValueError("For i(p_%(s)d, p_%(t)d) = 0, cutting slopes must also be zero" % {'s': s+1, 't': t+1})
             if lam_st > 0:
                 if lam_st != int(lam_st):
                     print lam_st
