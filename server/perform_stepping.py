@@ -283,16 +283,26 @@ def verify_inv(inv):
             if hidden[0][1] == hidden[0][2] and hidden[2][0] == hidden[2][1] \
                     and hidden[1][0] == hidden[1][2]:
                 pass
-            elif hidden[0][1] == hidden[0][2] and hidden[1][0] == hidden[2][0] \
-                    and hidden[1][0] > 0 \
-                    and hidden[1][0] < hidden[1][2] \
-                    and hidden[2][0] < hidden[2][1]:
+            elif hidden[0][1] == hidden[0][2] \
+                    and hidden[1][0] == hidden[2][0] > 0 \
+                    and (hidden[1][2] > hidden[1][0] or hidden[1][2] == 0) \
+                    and (hidden[2][1] > hidden[2][0] or hidden[2][1] == 0):
                 pass
-            elif hidden[0][2] == hidden[1][2] and hidden[2][0] == hidden[2][1] \
-                    and hidden[0][2] > 0 \
-                    and hidden[0][2] < hidden[0][1] \
-                    and hidden[1][2] < hidden[1][0]:
+#            elif hidden[0][1] == hidden[0][2] and hidden[1][0] == hidden[2][0] \
+#                    and hidden[1][0] > 0 \
+#                    and hidden[1][0] < hidden[1][2] \
+#                    and hidden[2][0] < hidden[2][1]:
+#                pass
+            elif hidden[2][0] == hidden[2][1] \
+                    and hidden[0][2] == hidden[1][2] > 0 \
+                    and (hidden[0][1] > hidden[0][2] or hidden[0][1] == 0) \
+                    and (hidden[1][0] > hidden[1][2] or hidden[1][0] == 0):
                 pass
+#            elif hidden[0][2] == hidden[1][2] and hidden[2][0] == hidden[2][1] \
+#                    and hidden[0][2] > 0 \
+#                    and hidden[0][2] < hidden[0][1] \
+#                    and hidden[1][2] < hidden[1][0]:
+#                pass
             else:
                 raise ValueError("hidden values are not valid for triple (t_%(s)d, t_%(t)d, t_%(u)d)" % ({'s': s+1, 't': t+1, 'u': u+1})) 
 

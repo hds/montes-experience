@@ -85,6 +85,63 @@ function phi_polynomial_html(r, s, m)  {
 	return html;
 }
 
+function html_basis_phi_polynomial(r, m)  {
+	var indices = r.indices[m];
+	var j, s, html, sep;
+
+	html = '$g_{'+m+'} = ';
+	sep = '';
+	
+	for (s = 0; s < indices.length; s++)  {
+		html += sep + '(';
+		var ind = r.bases_inds[s][indices[s]];
+
+		var prime_html = '';
+		for (var i = 0; i < ind.length; i++)  {
+			if (ind[i] > 0)  {
+				var exp = '', phii = ind.length-i;
+				if (ind[i] > 1)
+					exp = '^{'+ind[i]+'}'
+				if (i == 0)
+					phii = prime_ideals[s];
+				else
+					phii += ',' + prime_ideals[s];
+				prime_html += '\\phi_{'+phii+'}'+exp;
+			}
+		}
+		if (prime_html.length == 0)  {
+			prime_html = '1';
+		}
+
+		//html += sep + vals[j];
+		html += prime_html + ')';
+	}
+	html += '$'
+	
+	return html;
+
+
+	/*var	ind, html, sep;
+
+	ind = r.bases_inds[s][m];
+	
+	html = '$g_{'+(m)+','+prime_ideals[s]+'} = ';
+	sep = '';
+	
+	for (var i = 0; i < ind.length; i++)  {
+		if (ind[i] > 0)  {
+			var exp = '', phii = ind.length-i;
+			if (ind[i] > 1)
+				exp = '^{'+ind[i]+'}'
+			if (i == 0)
+				phii = prime_ideals[s];
+			html = html + sep + '\\phi_{'+phii+'}'+exp;
+
+			//sep = '\\cdot';
+		}
+	}*/
+
+}
 
 function html_basis_val(r, i)  {
 	vals = r.values[i];
@@ -196,7 +253,7 @@ function draw_stepping(invars)  {
 	r = invars;
 	line_colour = get_line_colour(r);
 	
-	$('#display').height((max_length(r)+1)*80);
+	$('#display').height((max_length(r)+1)*110);
 	hsz = $('#display').width();
 	vsz = $('#display').height();
 	$('#display').empty();
@@ -208,6 +265,7 @@ function draw_stepping(invars)  {
 	$('#display-upper').children().remove();
 	
 	var node, line;
+	var values, polynomials;
 	
 	hstep = Math.floor(hsz / (r.count+1));
 	vstep = Math.floor(vsz / (Math.max.apply(null, r.ns)+1));
@@ -297,6 +355,9 @@ function draw_stepping(invars)  {
 	values.append(html_basis_val(r, 0));
 	label = label_div(0, 0);
 	label.append('<br />', values);
+	polynomials = $('<span class="polynomials basis-polynomials"></span>');
+	polynomials.append(html_basis_phi_polynomial(r, 0));
+	label.append('<br/>', polynomials);
 	
 	var olds = r.ind_delta[0];
 	for (var i = 1; i < r.ind_delta.length; i++)  {
@@ -308,10 +369,13 @@ function draw_stepping(invars)  {
 		//line.attr({"stroke": "#6f6", "stroke-width": 1.5});
 		olds = s;
 		
+		label = label_div(s, r.indices[i][s]);
 		values = $('<span class="values basis-values"></span>');
 		values.append(html_basis_val(r, i));
-		label = label_div(s, r.indices[i][s]);
 		label.append('<br />', values);
+		polynomials = $('<span class="polynomials basis-polynomials"></span>');
+		polynomials.append(html_basis_phi_polynomial(r, i));
+		label.append('<br/>', polynomials);
 	}
 
 	if (r.error)  {
