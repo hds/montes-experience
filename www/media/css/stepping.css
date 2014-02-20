@@ -47,7 +47,8 @@
 	display: none;
 }
 
-.basis-values  {
+.basis-values,
+.basis-polynomials  {
 	color: #22c;
 }
 

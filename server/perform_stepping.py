@@ -172,19 +172,19 @@ def stepping_alg(bases_vals):
         bvs[s][len(bvs[s])-1][s] = inf
 
     J = [ 0 for bv in bvs ]
+    S = [ rat(0) for bv in bvs ]
     ind = [ list(J) ]
-    vals = [ ]
+    vals = [ list(S) ]
     n = sum([len(bv) for bv in bvs])-len(bvs)
 
     for i in range(0, n):
-        S = [ frac2rat(sum([bvs[s][J[s]][r] for s in range(0, len(bvs))])) for r in range(0, len(bvs)) ]
-        vals.append(S)
         k = S.index(min(S))
         J[k] += 1
 
-
-        if sum(J) < n:
-            ind.append(list(J))
+        #if sum(J) < n:
+        S = [ frac2rat(sum([bvs[s][J[s]][r] for s in range(0, len(bvs))])) for r in range(0, len(bvs)) ]
+        ind.append(list(J))
+        vals.append(S)
     
     return ind, vals
 
@@ -789,7 +789,7 @@ def stepping_vs_brute_force(inv):
     return correct
 
 
-def stepping_invariants(invars):
+def stepping_invariants(invars, bf_compare=False):
     #invars = inv_article_3()
 
     valid = True
@@ -813,7 +813,6 @@ def stepping_invariants(invars):
 
     bases_inds = [ basis_indices(tt) for tt in invars['types'] ]
 
-    bind, bvals = brute_force_alg(bases_vals)
     ind, vals = stepping_alg(bases_vals)
 
     results = {
@@ -831,10 +830,16 @@ def stepping_invariants(invars):
     }
     results.update(invars)
     
-    correct, output = print_stepping_vs_brute(ind, vals, bind, bvals)
-    if correct is False:
-        if error is None:
-            error = 'Stepping algorithm failed!'
+    if bf_compare is True:
+        bind, bvals = brute_force_alg(bases_vals)
+        correct, output = print_stepping_vs_brute(ind, vals, bind, bvals)
+        if correct is False:
+            if error is None:
+                error = 'Stepping algorithm failed!'
+    else:
+        error = ''
+        correct = True
+        output = 'No brute force comparison performed.'
     results.update({'error': error, 'correct': correct, 'vs_log': output})
     
     

@@ -11,7 +11,8 @@ function html_bases_vals(r, s, m)  {
 	if (ind[0] == 1)
 		vals[s] = '$\\pmb{\\infty}$';
 	
-	html = '(';
+	html = '$w(g_{'+(m)+','+prime_ideals[s]+'})$ = (';
+	//html = '(';
 	sep = '';
 	
 	for (var i = 0; i < vals.length; i++)  {
@@ -154,7 +155,7 @@ function html_basis_val(r, i)  {
 			vals[j] = '<span class="minimum">'+vals[j]+'</span>';
 	}
 	
-	html = '(';
+	html = '$w(g_{'+(i)+'})$ = (';
 	sep = '';
 	
 	for (j = 0; j < vals.length; j++)  {
@@ -344,39 +345,52 @@ function draw_stepping(invars)  {
 	for (s = 1; s < r.count; s++)  {
 		line = paper.path(dotpath(s-1, 0, s, 0, hstep, vstep));
 		console.log(dotpath(s-1, 0, s, 0, hstep, vstep))
-		line.attr({"stroke": line_colour, "stroke-width": 1.5});
+		line.attr({"stroke": line_colour, "stroke-width": 1.5, 'stroke-dasharray': ['-']});
 		
+		label = label_div(s, 0);
+		polynomials = $('<span class="polynomials basis-polynomials"></span>');
+		polynomials.append(html_basis_phi_polynomial(r, 0));
+		label.append('<br/>', polynomials);
 		values = $('<span class="values basis-values"></span>');
 		values.append(html_basis_val(r, 0));
-		label = label_div(s, 0);
 		label.append('<br />', values);
 	}
-	values = $('<span class="values basis-values"></span>');
-	values.append(html_basis_val(r, 0));
 	label = label_div(0, 0);
-	label.append('<br />', values);
 	polynomials = $('<span class="polynomials basis-polynomials"></span>');
 	polynomials.append(html_basis_phi_polynomial(r, 0));
 	label.append('<br/>', polynomials);
+	values = $('<span class="values basis-values"></span>');
+	values.append(html_basis_val(r, 0));
+	label.append('<br />', values);
 	
 	var olds = r.ind_delta[0];
 	for (var i = 1; i < r.ind_delta.length; i++)  {
 		var s = r.ind_delta[i];
 		line_arrow = paper.arrow((olds+1)*hstep, (r.indices[i-1][olds]+1)*vstep, (s+1)*hstep, (r.indices[i][s]+1)*vstep, 4);
 		line_arrow[0].attr({"arrow-end": "classic-long", "stroke": line_colour, "stroke-width": 1.5});
+		if (i == r.ind_delta.length-1)
+			line_arrow[0].attr({"stroke-dasharray": ["-"]})
 		line_arrow[1].attr({"arrow-end": "classic-long", "stroke": line_colour, "fill": line_colour});
 		//line = paper.path(dotpath(olds, r.indices[i-1][olds], s, r.indices[i][s], hstep, vstep));
 		//line.attr({"stroke": "#6f6", "stroke-width": 1.5});
 		olds = s;
 		
 		label = label_div(s, r.indices[i][s]);
-		values = $('<span class="values basis-values"></span>');
-		values.append(html_basis_val(r, i));
-		label.append('<br />', values);
 		polynomials = $('<span class="polynomials basis-polynomials"></span>');
 		polynomials.append(html_basis_phi_polynomial(r, i));
 		label.append('<br/>', polynomials);
+		values = $('<span class="values basis-values"></span>');
+		values.append(html_basis_val(r, i));
+		label.append('<br />', values);
 	}
+	var s;
+	for (s = 0; s < r.count; s++)  {
+		if (r.indices[r.indices.length-1][s] < r.ns[s]-1)
+			break;
+	}
+/*	line_arrow = paper.arrow((olds+1)*hstep, (r.indices[r.indices.length-1][olds]+1)*vstep, (s+1)*hstep, (r.ns[s])*vstep, 4);
+	line_arrow[0].attr({"arrow-end": "classic-long", "stroke": line_colour, "stroke-width": 1.5, 'stroke-dasharray': ['-']});
+	line_arrow[1].attr({"arrow-end": "classic-long", "stroke": line_colour, "fill": line_colour});*/
 
 	if (r.error)  {
 		$('.error').empty().append(r.error).css('display', 'block');
