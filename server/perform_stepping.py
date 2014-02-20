@@ -837,7 +837,6 @@ def stepping_invariants(invars, bf_compare=False):
             if error is None:
                 error = 'Stepping algorithm failed!'
     else:
-        error = ''
         correct = True
         output = 'No brute force comparison performed.'
     results.update({'error': error, 'correct': correct, 'vs_log': output})

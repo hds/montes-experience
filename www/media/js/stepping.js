@@ -255,6 +255,7 @@ function draw_stepping(invars)  {
 	line_colour = get_line_colour(r);
 	
 	$('#display').height((max_length(r)+1)*110);
+	$('#display').width(Math.max($('#display').width(), r.count*250))
 	hsz = $('#display').width();
 	vsz = $('#display').height();
 	$('#display').empty();
@@ -369,8 +370,6 @@ function draw_stepping(invars)  {
 		if (i == r.ind_delta.length-1)
 			line_arrow[0].attr({"stroke-dasharray": ["-"]})
 		line_arrow[1].attr({"arrow-end": "classic-long", "stroke": line_colour, "fill": line_colour});
-		//line = paper.path(dotpath(olds, r.indices[i-1][olds], s, r.indices[i][s], hstep, vstep));
-		//line.attr({"stroke": "#6f6", "stroke-width": 1.5});
 		olds = s;
 		
 		label = label_div(s, r.indices[i][s]);
@@ -386,9 +385,6 @@ function draw_stepping(invars)  {
 		if (r.indices[r.indices.length-1][s] < r.ns[s]-1)
 			break;
 	}
-/*	line_arrow = paper.arrow((olds+1)*hstep, (r.indices[r.indices.length-1][olds]+1)*vstep, (s+1)*hstep, (r.ns[s])*vstep, 4);
-	line_arrow[0].attr({"arrow-end": "classic-long", "stroke": line_colour, "stroke-width": 1.5, 'stroke-dasharray': ['-']});
-	line_arrow[1].attr({"arrow-end": "classic-long", "stroke": line_colour, "fill": line_colour});*/
 
 	if (r.error)  {
 		$('.error').empty().append(r.error).css('display', 'block');
@@ -536,18 +532,6 @@ function drawTree(inv)  {
 			//console.log("index of coincidence", i, j, "=", ind_coin(inv, i, j));
 		}
 	}
-	
-//	node = paper.circle((s+1)*hstep, (m+1)*vstep, 4);
-//	node.attr("fill", "#000000");
-//	node.hover(function() {
-//			this.attr({"fill": "#fff", "stroke-width": 2});
-//			this.transform("s1.5");
-//		},
-//		function ()  {
-//			this.attr({"fill": "#000", "stroke": "#000"});
-//			this.transform("s1");
-//		}
-//	);
 	
 }
 
