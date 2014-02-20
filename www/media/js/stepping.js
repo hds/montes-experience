@@ -227,13 +227,13 @@ function max_length(r)  {
 			max_length = r.bases_inds[s].length;
 	}
 	
-	console.log(max_length);
+	//console.log(max_length);
 	
 	return max_length;
 }
 
 function get_line_colour(invars)  {
-	console.log(invars.valid);
+	//console.log(invars.valid);
 	if (invars.valid)  {
 		if (invars.correct)
 			return "#6c6";
@@ -319,7 +319,6 @@ function draw_stepping(invars)  {
 			
 			values.bind('click', function() {
 				var	max = 0, current = -1;
-				console.log($(this));
 			});
 			
 //			values = $('<span class="values bases-values-diff"></span>');
@@ -344,7 +343,6 @@ function draw_stepping(invars)  {
 	// Lines
 	for (s = 1; s < r.count; s++)  {
 		line = paper.path(dotpath(s-1, 0, s, 0, hstep, vstep));
-		console.log(dotpath(s-1, 0, s, 0, hstep, vstep))
 		line.attr({"stroke": line_colour, "stroke-width": 1.5, 'stroke-dasharray': ['-']});
 		
 		label = label_div(s, 0);
@@ -525,7 +523,7 @@ function drawTree(inv)  {
 	var types = [ ];
 	var max_r = 0;
 	
-	console.log(inv);
+	//console.log(inv);
 	for (var ti = 0; ti < inv.types.length; ti++)  {
 		if (inv.types[ti].length > max_r)  {
 			max_r = inv.types[ti].length;
@@ -535,7 +533,7 @@ function drawTree(inv)  {
 	
 	for (var i = 0; i < inv.types.length; i++)  {
 		for (var j = i+1; j < inv.types.length; j++)  {
-			console.log("index of coincidence", i, j, "=", ind_coin(inv, i, j));
+			//console.log("index of coincidence", i, j, "=", ind_coin(inv, i, j));
 		}
 	}
 	
