@@ -25,6 +25,7 @@
 	position: absolute;
 	font-size: 11pt;
 	line-height: 14pt;
+	white-space: nowrap;
 }
 
 #invariant-input  {
