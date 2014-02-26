@@ -1,5 +1,6 @@
 import sys
 import re
+import copy
 
 import fractions
 import math
@@ -147,8 +148,8 @@ def brute_force_alg(bases_vals):
 
     #print bvs
 
-    ind = [ [] for m in range(0, n) ]
-    vals = [ [] for m in range(0, n) ]
+    ind = [ [] for m in range(0, n+1) ]
+    vals = [ [] for m in range(0, n+1) ]
     for i in range(0, reduce(mul, [len(bv) for bv in bvs])):
         j = 0
         for j in range(0, len(J)):
@@ -158,9 +159,9 @@ def brute_force_alg(bases_vals):
         m = sum(J)
         S = [ frac2rat(sum([bvs[s][J[s]][r] for s in range(0, len(bvs))])) for r in range(0, len(bvs)) ]
 
-        if sum(J) < n:
-            vals[m].append(S)
-            ind[m].append(list(J))
+        #if sum(J) < n:
+        vals[m].append(S)
+        ind[m].append(list(J))
 
     return ind, vals
 
@@ -748,7 +749,7 @@ def compare_results(ind1, vals1, ind2, vals2, printvals=False):
 
 
 def print_stepping_vs_brute(ind, vals, bind, bvals):
-    n = len(ind)
+    n = len(ind)-1
     correct = True
     output = ''
     
@@ -764,6 +765,7 @@ def print_stepping_vs_brute(ind, vals, bind, bvals):
             output += "%d: %s --> |_ %s _| = %d  ==  %d = |_ %s _| <-- %s  !! FALSE !!\n" % (m, str(bind[m][i]), str(val), math.floor(val), math.floor(min(vals[m])), min(vals[m]), str(ind[m]))
             for i in range(0, len(bind[m])):
                 output += "  %s: %s\n" % (str(bind[m][i]), str(bvals[m][i]),)
+    output += "%d: We don't check the final step, as it's provably correct.\n" % (m+1)
 
     return correct, output
 
@@ -788,9 +790,57 @@ def stepping_vs_brute_force(inv):
 
     return correct
 
+def indco_index(i, j):
+    if i == j:
+        raise Exception("no index of coincidence for self")
+    if i > j:
+        i, j = j, i
+    return (i, j-i-1)
+
+def permutate_primes(invars):
+    invarsp = copy.deepcopy(invars)
+    s = len(invars['types'])
+    p = [i-1 for i in invars['permutation']]
+
+    # Check permutations
+    check = [1 for a in range(s)]
+    for i in range(s):
+        check[p[i]] = 0
+    if sum(check) > 0:
+        raise ValueError("Permutation is not exhaustive: {0}".format(p))
+
+    if 'primes' in invars:
+        for i in range(s):
+            invarsp['primes'][p[i]] = invars['primes'][i]
+
+    for i in range(s):
+        # Okutsu invariants
+        invarsp['types'][p[i]] = invars['types'][i]
+
+        for j in range(s):
+            # Hidden slopes
+            invarsp['hidden'][p[i]][p[j]] = invars['hidden'][i][j]
+
+            if i < j:
+                ii = indco_index(i, j)
+                ip = indco_index(p[i], p[j])
+                invarsp['j'][ip[0]][ip[1]] = invars['j'][ii[0]][ii[1]]
+
+    for i in range(s):
+        # Finally, permutate the permutation array. It should end up
+        # as the identity permutation.
+        invarsp['permutation'][p[i]] = invars['permutation'][i]
+
+    from pprint import pprint, pformat
+    printed = pformat(invarsp)
+    print printed.replace("u'", '"').replace("'", '"')
+    return invarsp
 
 def stepping_invariants(invars, bf_compare=False):
     #invars = inv_article_3()
+
+    if 'permutation' in invars:
+        invars = permutate_primes(invars)
 
     valid = True
     error = None
@@ -830,6 +880,7 @@ def stepping_invariants(invars, bf_compare=False):
     }
     results.update(invars)
     
+    bf_compare = True
     if bf_compare is True:
         bind, bvals = brute_force_alg(bases_vals)
         correct, output = print_stepping_vs_brute(ind, vals, bind, bvals)
