@@ -831,9 +831,6 @@ def permutate_primes(invars):
         # as the identity permutation.
         invarsp['permutation'][p[i]] = invars['permutation'][i]
 
-    from pprint import pprint, pformat
-    printed = pformat(invarsp)
-    print printed.replace("u'", '"').replace("'", '"')
     return invarsp
 
 def stepping_invariants(invars, bf_compare=False):
