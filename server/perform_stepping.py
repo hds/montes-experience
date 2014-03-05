@@ -811,25 +811,25 @@ def permutate_primes(invars):
 
     if 'primes' in invars:
         for i in range(s):
-            invarsp['primes'][p[i]] = invars['primes'][i]
+            invarsp['primes'][i] = invars['primes'][p[i]]
 
     for i in range(s):
         # Okutsu invariants
-        invarsp['types'][p[i]] = invars['types'][i]
+        invarsp['types'][i] = invars['types'][p[i]]
 
         for j in range(s):
             # Hidden slopes
-            invarsp['hidden'][p[i]][p[j]] = invars['hidden'][i][j]
+            invarsp['hidden'][i][j] = invars['hidden'][p[i]][p[j]]
 
             if i < j:
                 ii = indco_index(i, j)
                 ip = indco_index(p[i], p[j])
-                invarsp['j'][ip[0]][ip[1]] = invars['j'][ii[0]][ii[1]]
+                invarsp['j'][ii[0]][ii[1]] = invars['j'][ip[0]][ip[1]]
 
     for i in range(s):
         # Finally, permutate the permutation array. It should end up
         # as the identity permutation.
-        invarsp['permutation'][p[i]] = invars['permutation'][i]
+        invarsp['permutation'][i] = invars['permutation'][p[i]]
 
     return invarsp
 
