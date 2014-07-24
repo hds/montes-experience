@@ -25,7 +25,10 @@
 	</head>
 
 	<body class="">
-		<div id="invariant-input">
+		<div id="topstrap">
+			<p><a href="javascript:$('.control').toggle();">Toggle controls</a></p>
+		</div>
+		<div id="invariant-input" class="control">
 			<div class="error"></div>
 			<form id="id__invariant_form" method="GET" action=".">
 <!--				<p id="id__group_prime_ideals">
@@ -174,7 +177,7 @@
 
 		</div>
 
-		<div class="log">
+		<div class="log control">
 			<textarea id="__id_vs_log" cols="100" rows="10" readonly="readonly"></textarea>
 			<p><a href="javascript:$('#__id_vs_log').toggle(); $('html, body').animate({ scrollTop: $(document).height() }, 0);">Toggle VS Log</a></p>
 		</div>

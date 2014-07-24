@@ -877,7 +877,7 @@ def stepping_invariants(invars, bf_compare=False):
     }
     results.update(invars)
     
-    bf_compare = True
+    #bf_compare = True
     if bf_compare is True:
         bind, bvals = brute_force_alg(bases_vals)
         correct, output = print_stepping_vs_brute(ind, vals, bind, bvals)

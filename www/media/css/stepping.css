@@ -15,11 +15,29 @@
 	height: 70px;
 }
 
+#display-outer, #display-upper  {
+	margin-top: 20px;
+}
+
 #overlay  {
 	position: absolute;
 	left: 0;
 	top: 0;
 }
+
+#topstrap  {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 30px;
+	background: #ccc none;
+}
+
+#topstrap p  {
+	margin: 4px;
+}
+
 
 .label  {
 	position: absolute;
